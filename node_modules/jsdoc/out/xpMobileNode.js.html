@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: xpMobileNode.js</title>
+    
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+    
+    <h1 class="page-title">Source: xpMobileNode.js</h1>
+    
+    
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source"><code>/**
+ *	@overview JS Implementation of xPlaces protocol.
+ *	Based on xpNetwork and xpDeviceImpl C++ classes
+ *
+ *	@copyright &lt;a href="http://www.crs4.it">CRS4 2013&lt;/a>
+ *	@author Simone Kalb &lt;kalb@crs4.it> 
+ *	@author Gian Maria Simbula &lt;simbula@crs4.it>
+ *	
+ *	@summary: Original work by Gian Maria Simbula
+ *	eMail: simbula@sardegnaricerche.it
+ *	eMail: simbula@crs4.it 
+ */
+
+/** 
+ *	@constant
+ *  @type {number}
+ *  @description XP_ANNOUNCE defines an xpAnnounce message type, referring to xPlaces protocol
+ *  @default 1
+ */
+var XP_ANNOUNCE = 1;
+
+/** 
+ *	@constant
+ *  @type {number}
+ *  @description XP_EVENT defines an xpEvent message type, referring to xPlaces protocol
+ *  @default 2
+ */
+var XP_EVENT = 2;
+
+/** 
+ *	@constant
+ *  @type {number}
+ *  @description XP_ACTION defines an xpAction message type, referring to xPlaces protocol
+ *  @default 3
+ */
+var XP_ACTION = 3;
+
+/** 
+ *	@constant
+ *  @type {number}
+ *  @description XP_ADD_LISTENER defines an xpAddEventListerner message type, referring to xPlaces protocol
+ *  @default 4
+ */
+var XP_ADD_LISTENER = 4;
+
+/** 
+ *	@constant
+ *  @type {number}
+ *  @description XP_REMOVE_LISTENER defines an xpRemoveEventListerner message type, referring to xPlaces protocol
+ *  @default 5
+ */
+var XP_REMOVE_LISTENER = 5;
+
+var xPlacesServerIPPort;
+var localIP;
+var configurationFile;
+
+var dgram = require("dgram");
+var xpTools = require('xpTools');
+var http = require("http");
+
+/**
+ * xpMobileNode creates a node of an xPlaces network.
+ * @method xpMobileNode
+ * @param  {integer}     id
+ * @param  {remoteRequest}     client
+ * @param  {string}     configurationPathFile
+ * 
+ */
+function xpMobileNode(id, client, configurationPathFile) {
+
+	if(typeof(configurationPathFile) === 'undefined') configurationPathFile = "JSON/configuration.json";
+	
+	configurationFile = configurationPathFile;
+
+	var basePort = xpTools.getConfigurationData(configurationFile).netconf.basePort;
+  	localIP = xpTools.getConfigurationData(configurationFile).netconf.localIP;
+  	xPlacesServerIPPort = xpTools.getConfigurationData(configurationFile).netconf.xPlacesServerIPPort;
+
+	this.id = id;
+	this.port = basePort + id;
+	this.descriptor;
+	this.announcesList;
+	this.deadList;
+	this.eventListenerList;
+	this.client;
+	this.client = client;
+	this.intervalAnnounce;
+	this.intervalEvent;
+};
+
+/**
+ * Clear intervals and destroy the object
+ * @method delete
+ * 
+ */
+xpMobileNode.prototype.delete = function () {
+	clearInterval(this.intervalAnnounce);
+	clearInterval(this.intervalEvent);
+}
+
+/**
+ * Initialize the xpMobileNode object, setting all the environment, configuration variables and starts the logic
+ * @method init
+ * 
+ */
+xpMobileNode.prototype.init = function () { 
+
+	var randomString = xpTools.randomString(64, true, true, true); 
+  	var baseName = xpTools.getConfigurationData(configurationFile).device.device_name;
+  	var deviceType = xpTools.getConfigurationData(configurationFile).device.device_type;
+  	
+  	this.descriptor = new Object();
+  	this.descriptor["device_name"] = baseName + this.id;
+	this.descriptor["device_type"] = deviceType;
+	this.descriptor["sender_session"] = randomString;
+	this.descriptor["sender_ip_port"] = "http://" + localIP + ":" + this.port;
+	this.descriptor["recipient_ip_port"] = xPlacesServerIPPort;
+	this.descriptor["sender_type"] = deviceType;
+	this.descriptor["sender_name"] = baseName + this.id;
+	
+	xpTools.xpLog(true, "Server: " + xPlacesServerIPPort + " localIP: " + localIP + " Port: " + this.port);
+	
+	this.announcesList = new Array();
+	this.deadList = new Array();
+	this.eventListenerList = new Array();
+
+	this.client = dgram.createSocket("udp4");
+	
+	var objRef = this;
+	
+	this.client.on("message", function (msg, rinfo) {
+		objRef.dispatcher(msg);	
+	});
+	
+	var clientRef = this.client;
+	this.client.on("listening", function () {
+	address = clientRef.address();
+	  xpTools.xpLog(false, "Server listening " + address.address + ":" + address.port);
+	});
+
+
+	this.client.bind(this.port, localIP);
+
+	this.intervalAnnounce = setInterval(this.announceService, 5000, this);
+	this.intervalEvent = setInterval(this.sendCustomEvent, 1000, this);
+};
+
+/**
+ * Dispatchs the data received from xPlaces network and calls the needed callback. 
+ * Used internally.
+ * @method dispatcher
+ * @param  {Hashtable}   properties
+ * 
+ */
+xpMobileNode.prototype.dispatcher = function(properties) {
+	var message = xpTools.datagramToHash(properties);
+	switch(parseInt(message['message_type']))
+	{
+		case (XP_EVENT):
+			this.dispatchEvent(message, this);
+		break;
+		case (XP_ACTION):
+			this.dispatchAction(message, this);
+		break;
+		case(XP_ADD_LISTENER):
+			this.dispatchListener(message, this);
+		break;
+		case(XP_REMOVE_LISTENER):
+			this.dispatchRemoveListener(message, this);
+		break;
+		case(XP_ANNOUNCE):
+			this.addAnnounce(message, this);
+		break;
+		default:
+			xpTools.xpLog(false, "Not a known type...\n");
+		break;
+	}
+};
+
+/* **********************************************************************
+* 						STARTING Announce code-block
+********************************************************************** */
+/**
+ * Add a descriptor to the local descriptor list based on announce message received  
+ * @method addAnnounce
+ * @param  {HashTable}    announce
+ * @param  {xpMobileNode}    objRef
+ */
+xpMobileNode.prototype.addAnnounce = function(announce, objRef) {
+		if (objRef.descriptor["sender_ip_port"] == announce['sender_ip_port']) {
+			xpTools.xpLog(true, "Ghost received - discarded: " + announce['sender_session']);
+			return;
+		}
+		
+		for(var i = 0; i &lt; objRef.deadList.length; i++) {
+			//Return if announce is related to an item in deadList.
+			if(announce['sender_ip_port'] == objRef.deadList[i]['sender_ip_port'] && announce['sender_session'] == objRef.deadList[i]['sender_session'])
+				return;
+		}
+		
+		for(var i = 0 ; i &lt; objRef.announcesList.length; i++) {
+			var iThElement = objRef.announcesList[i];	
+			if(iThElement['sender_session'] == announce['sender_session']) {
+				iThElement['time_stamp'] = new Date().getTime();
+				xpTools.xpLog(true, "Updating announce item " + iThElement['sender_session'] + "\n");
+				return;
+			}
+		}
+
+		if (xPlacesServerIPPort == objRef.descriptor['sender_ip_port']) {
+			for(var i = 0 ; i &lt; objRef.announcesList.length; i++) {
+				objRef.sendAnnounce(announce, objRef.announcesList[i]['sender_ip_port']);
+			}
+		}
+
+		xpTools.xpLog(false, "New node detected on ip: " + announce['device_name'] + " " + announce['sender_session'] + ": new item\n");
+		announce['time_stamp'] = new Date().getTime();
+		objRef.announcesList.push(announce);
+};
+
+/**
+ * Check for dead node in the announce list and and sends local descriptor to other nodes.
+ * Announce interval logic code. Used internally.
+ * @method announceService
+ * @param  {xpMobileNode}        objRef
+ * 
+ */
+xpMobileNode.prototype.announceService = function(objRef) {
+	for (var i = objRef.announcesList.length - 1; i >= 0; i--) {
+		var announceItem = objRef.announcesList[i];
+		
+		var timeDiff = new Date().getTime() - announceItem.time_stamp;
+				
+		if (timeDiff > 10000) {
+			xpTools.xpLog(false, "Dead Node at " + announceItem.sender_ip_port+"\n");
+			objRef.deadList.push(announceItem);
+			objRef.announcesList.remove(i, i);
+		}
+	}
+	
+	//We need to send the descriptor to the server at least the first time.
+	if(xPlacesServerIPPort != objRef.descriptor['sender_ip_port']) {
+		objRef.sendAnnounce(objRef.descriptor, xPlacesServerIPPort);
+	}
+	
+	for(var i = 0 ; i &lt; objRef.announcesList.length; i++)	{	
+		if(objRef.announcesList[i].sender_ip_port != xPlacesServerIPPort) {
+			objRef.sendAnnounce(objRef.descriptor, objRef.announcesList[i]['sender_ip_port']);
+		}
+	}
+	
+	//NOTE: We have only one device in a xpWebSocket instance
+};
+/**
+ * Just send a descriptor to destination node.
+ * @method sendAnnounce
+ * @param  {HashTable}     descriptor
+ * @param  {string}     destination
+ * 
+ */
+xpMobileNode.prototype.sendAnnounce = function(descriptor, destination) {
+	// Send its own descriptor to network
+	descriptor['recipient_ip_port'] = destination;
+	this.announce(descriptor);
+};
+/**
+ * Forwards the device descriptor data through the network. Used internally.
+ * @method announce
+ * @param  {HashTable} device
+ * @return {boolean} true if successful, false otherwise
+ */
+xpMobileNode.prototype.announce = function(device) {
+	device["message_type"] = XP_ANNOUNCE;
+	var recipientAddress = device["recipient_ip_port"];
+	// TODO xpTools.testAddress
+	recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+	var recipientIP = recipientAddress.split(":")[0];
+	var recipientPort = recipientAddress.split(":")[1];
+	var datagram = xpTools.toByteArray(device);
+	
+	this.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+		if(err){
+			xpTools.xpLog(false, "[xpMobileNode sending announce] Unable to send datagram\n");
+			this.client.close();
+		}
+	  	
+	});
+	
+	return true;
+};
+
+/* **********************************************************************
+* 						ENDING Announce code-block
+********************************************************************** */
+
+/* **********************************************************************
+* 						STARTING Action code-block
+********************************************************************** */
+/**
+ * Just logs if the node is receiving an action. 
+ * You must overrite it for a most specialized behaviour when 
+ * an acion has been received. 
+ * @method dispatchAction
+ * @param  {HashTable}       action
+ * @param  {xpMobileNode}       objRef
+ * 
+ */
+xpMobileNode.prototype.dispatchAction = function(action, objRef) {
+	if(action['recipient_session'] == objRef.descriptor['sender_session']) {
+		xpTools.xpLog(false, "Action Received");
+	}
+}
+
+/**
+ * Forwards an action to destinations node. Used internally.	
+ * @method sendActionByProxy
+ * @param  {Hashtable}          destinationNode
+ * @param  {Hashtable}          xpAction
+ * @param  {xpMobileNode}          objRef
+ * 
+ */
+xpMobileNode.prototype.sendActionByProxy = function(destinationNode, xpAction, objRef) {
+	if(destinationNode != null) {
+		//Adding specific properties of xpAction to passed key:value list
+		xpAction["message_type"] = XP_ACTION;
+		xpAction["sender_ip_port"] = objRef.descriptor["sender_ip_port"];
+		xpAction["sender_session"] = objRef.descriptor["sender_session"];
+		xpAction["recipient_ip_port"] = destinationNode["sender_ip_port"];
+		xpAction["recipient_session"] = destinationNode["sender_session"];
+			
+		var recipientAddress = xpAction["recipient_ip_port"];
+		// TODO xpTools.testAddress
+		recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+		var recipientIP = recipientAddress.split(":")[0];
+		var recipientPort = recipientAddress.split(":")[1];
+		var datagram = xpTools.toByteArray(xpAction);
+		
+		objRef.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+			if(err){
+				xpTools.xpLog(false, "[xpMobileNode sending action by name] Unable to send datagram\n");
+				objRef.client.close();
+			}
+			xpTools.xpLog(false, "Action sent to " + destinationNode["senderName"] + "!\n");
+		});
+	}
+}
+
+/**
+ * Sends an xpAction to the destination node referring by its name
+ * @method sendActionByName
+ * @param  {string}         destinationName
+ * @param  {HashTable}         xpAction
+ * @param  {xpMobileNode}         objRef
+ * 
+ */
+xpMobileNode.prototype.sendActionByName = function(destinationName, xpAction, objRef) {
+
+	/* ************************************************ 
+	**  TODO Set a time limit or a iterations limit  **
+	**************************************************/
+
+	var iterations = 0;
+
+	var nonBlockingSendingFunc = function(destinationName, xpAction, objRef, callback, iterations) {
+		if(iterations &lt;= 10) {
+			var destination = objRef.lookupDevice(destinationName, objRef);
+			if(destination != null) {
+				//Adding specific properties of xpAction to passed key:value list
+				xpAction["message_type"] = XP_ACTION;
+				xpAction["sender_ip_port"] = objRef.descriptor["sender_ip_port"];
+				xpAction["sender_session"] = objRef.descriptor["sender_session"];
+				xpAction["recipient_ip_port"] = destination["sender_ip_port"];
+				xpAction["recipient_session"] = destination["sender_session"];
+					
+				var recipientAddress = xpAction["recipient_ip_port"];
+				// TODO xpTools.testAddress
+				recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+				var recipientIP = recipientAddress.split(":")[0];
+				var recipientPort = recipientAddress.split(":")[1];
+				var datagram = xpTools.toByteArray(xpAction);
+				
+				objRef.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+					if(err){
+						xpTools.xpLog(false, "[xpMobileNode sending action by name] Unable to send datagram\n");
+						objRef.client.close();
+					}
+					xpTools.xpLog(false, "Action sent to " + destinationName + "!\n");
+
+				});
+			} else {
+				iterations++;
+				setTimeout(callback, 1000, destinationName, xpAction, objRef, callback, iterations);
+			}
+		}
+	}
+	
+	setTimeout(nonBlockingSendingFunc, 1000, destinationName, xpAction, objRef, nonBlockingSendingFunc, iterations);
+}
+
+/**
+ * Sends an xpAction to a set of destination nodes referring by their type
+ * @method sendActionByName
+ * @param  {string}         destinationType
+ * @param  {HashTable}         xpAction
+ * @param  {xpMobileNode}         objRef
+ * 
+ */
+xpMobileNode.prototype.sendActionByType = function(destinationType, xpAction, objRef) {
+
+	/* ************************************************ 
+	**  TODO Set a time limit or a iterations limit  **
+	**************************************************/
+	
+	var iterations = 0;
+	var nonBlockingSendingFunc = function(destinationType, xpAction, objRef, callback, iterations) {
+		if(iterations &lt;= 10) {
+			var destinationList = objRef.lookupDevices(destinationType, objRef);
+			if(destinationList != null) {
+				//Adding specific properties of xpAction to passed key:value list
+				xpAction["message_type"] = XP_ACTION;
+				xpAction["sender_ip_port"] = objRef.descriptor["sender_ip_port"];
+				xpAction["sender_session"] = objRef.descriptor["sender_session"];
+				
+				for(var i = 0; i &lt; destinationList.length; i++) {
+					xpAction["recipient_ip_port"] = destinationList[i].sender_ip_port;
+					xpAction["recipient_session"] = destinationList[i].sender_session;
+						
+					var recipientAddress = xpAction["recipient_ip_port"];
+					// TODO xpTools.testAddress
+					recipientAddress = recipientAddress.substr(7,recipientAddress.length);
+					var recipientIP = recipientAddress.split(":")[0];
+					var recipientPort = recipientAddress.split(":")[1];
+					var datagram = xpTools.toByteArray(xpAction);
+					
+					objRef.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+						if(err){
+							xpTools.xpLog(false, "[xpMobileNode sending action by type] Unable to send datagram\n");
+							objRef.client.close();
+						}
+					});
+				}
+				xpTools.xpLog(false, "Action sent to " + destinationList.length + " nodes of type " + destinationType + "!\n");
+			} else {
+				iterations++;
+				setTimeout(callback, 1000, destinationType, xpAction, objRef, callback, iterations);
+			}
+		}
+	}
+	
+	setTimeout(nonBlockingSendingFunc, 1000, destinationType, xpAction, objRef, nonBlockingSendingFunc, iterations);
+}
+
+/* **********************************************************************
+* 						ENDING Action code-block
+********************************************************************** */
+
+/* **********************************************************************
+* 						STARTING Event Listener code-block
+********************************************************************** */
+/**
+ * Adds a listener to the eventListenerList based on eventTypeMask. 
+ * Used internally.
+ * 
+ * @method dispatchListener
+ * @param  {Hashtable}         eventListener
+ * @param  {xpMobileNode}         objRef
+ * 
+ */
+xpMobileNode.prototype.dispatchListener = function(eventListener, objRef) {
+	eventListener['timeStamp'] = new Date().getTime();
+	if(eventListener['recipient_session'] == objRef.descriptor['sender_session']) {
+		//We have to check if eventListener is already listening for some event, if so, we need to update the related event mask.
+		var foundListener = false;
+		for(var i = 0; i &lt; objRef.eventListenerList.length; i++) {
+			if(eventListener['sender_ip_port'] == objRef.eventListenerList[i].sender_ip_port && eventListener['sender_session'] == objRef.eventListenerList[i].sender_session) {
+				objRef.eventListenerList[i].eventTypeMask = objRef.eventListenerList[i].eventTypeMask | eventListener['eventTypeMask'];
+				xpTools.xpLog(false, "Updating eventListener mask on IP " + eventListener['sender_ip_port'] + " and session " + eventListener['sender_session'] + "\n");
+				foundListener = true;
+				break;
+			}
+		}
+	
+		if(!foundListener) {
+			xpTools.xpLog(false, "New eventListener on ip " + eventListener['sender_ip_port'] + " and session " + eventListener['sender_session'] + "\n");
+			objRef.eventListenerList.push(eventListener);
+		}
+		
+	} else {
+		xpTools.xpLog(false, "Someone asked for a different session: " + eventListener['recipient_ip_port'] + "\n");
+	}
+};
+/**
+ * Removes an listener from the eventListenerList based on eventTypeMask. 
+ * Used internally			
+ * @method dispatchRemoveListener
+ * @param  {Hashtable}               eventListener
+ * @param  {xpMobileNode}               objRef
+ * 
+ */
+xpMobileNode.prototype.dispatchRemoveListener = function(eventListener, objRef) {
+	if(eventListener['recipient_session'] == objRef.descriptor['sender_session']) {
+		xpTools.xpLog(false, "IP " + objRef.descriptor['sender_ip_port'] + " has " + objRef.eventListenerList.length + " listeners\n");
+		for(var i = 0; i &lt; objRef.eventListenerList.length; i++) {
+			if(objRef.eventListenerList[i].sender_session == eventListener.sender_session) {
+				objRef.eventListenerList[i].eventTypeMask = xpTools.XOR(objRef.eventListenerList[i].eventTypeMask, eventListener.eventTypeMask);
+				if(objRef.eventListenerList[i].eventTypeMask == 0x0){
+					objRef.eventListenerList.remove(i,i);
+					xpTools.xpLog(false, "Removing eventListener on IP " + objRef.descriptor['sender_ip_port'] + "\n");
+					xpTools.xpLog(false, "\tNow IP " + objRef.descriptor['sender_ip_port'] + " has " + objRef.eventListenerList.length + " listeners\n");
+				} else {
+					xpTools.xpLog(false, "Removing type: " + eventListener.eventTypeMask + " for eventListener on IP " + eventListener['sender_ip_port'] + "\n");
+				}
+			}
+		}
+	} else {
+		xpTools.xpLog(false, "Someone asked for a different session: " + eventListener['recipient_ip_port'] + "\n");
+	}
+};
+/**
+ * Send a request to listen an eventType from a specified node referring to its name
+ * @method listenDevice
+ * @param  {string}     deviceName
+ * @param  {string}     eventTypeMask
+ * @param  {xpMobileNode}     objRef
+ * 
+ */
+xpMobileNode.prototype.listenDevice = function(deviceName, eventTypeMask, objRef) {
+	var iterations = 0;
+	var nonBlockingSendingFunc = function(deviceName, objRef, callback, iterations) {
+		if(iterations &lt;= 10) {
+			var destination = objRef.lookupDevice(deviceName, objRef);
+			if(destination != null) {
+				var listener = new Object();
+				listener["message_type"] = XP_ADD_LISTENER;
+				listener["sender_ip_port"] = objRef.descriptor["sender_ip_port"];
+				listener["sender_session"] = objRef.descriptor["sender_session"];
+				listener["recipient_ip_port"] = destination["sender_ip_port"];
+				listener["recipient_session"] = destination["sender_session"];
+				listener["eventTypeMask"] = eventTypeMask;	
+				var recipientAddress = listener["recipient_ip_port"];
+				recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+				var recipientIP = recipientAddress.split(":")[0];
+				var recipientPort = recipientAddress.split(":")[1];
+				var datagram = xpTools.toByteArray(listener);
+				
+				objRef.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+					if(err){
+						xpTools.xpLog(false, "[xpMobileNode sending listener by name] Unable to send datagram\n");
+						objRef.client.close();
+					}
+					xpTools.xpLog(false, "Listener sent to " + deviceName + "!\n");
+
+				});
+			} else {
+				iterations++;
+				setTimeout(callback, 1000, deviceName, objRef, callback, iterations);
+			}
+		}
+	}
+	
+	setTimeout(nonBlockingSendingFunc, 1000, deviceName, objRef, nonBlockingSendingFunc, iterations);
+
+};
+/**
+ * Send a request to listen an eventType from a specified set of nodes referring to their type
+ * @method listenDevice
+ * @param  {string}     deviceType
+ * @param  {string}     eventTypeMask
+ * @param  {xpMobileNode}     objRef
+ * 
+ */
+xpMobileNode.prototype.listenDevices = function(deviceType, eventTypeMask, objRef) {
+	var iterations = 0;
+	var nonBlockingSendingFunc = function(deviceType, objRef, callback, iterations) {
+		if(iterations &lt;= 10) {
+			var destinationList = objRef.lookupDevices(deviceType, objRef);
+			if(destinationList != null) {
+				//Adding specific properties of xpAction to passed key:value list
+				var listener = new Object();
+				listener["message_type"] = XP_ADD_LISTENER;
+				listener["sender_ip_port"] = objRef.descriptor["sender_ip_port"];
+				listener["sender_session"] = objRef.descriptor["sender_session"];
+				listener["eventTypeMask"] = eventTypeMask;
+				for(var i = 0; i &lt; destinationList.length; i++) {
+					listener["recipient_ip_port"] = destinationList[i].sender_ip_port;
+					listener["recipient_session"] = destinationList[i].sender_session;
+						
+					var recipientAddress = listener["recipient_ip_port"];
+					// TODO xpTools.testAddress
+					recipientAddress = recipientAddress.substr(7,recipientAddress.length);
+					var recipientIP = recipientAddress.split(":")[0];
+					var recipientPort = recipientAddress.split(":")[1];
+					var datagram = xpTools.toByteArray(listener);
+					
+					objRef.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+						if(err){
+							xpTools.xpLog(false, "[xpMobileNode sending Listener by type] Unable to send datagram\n");
+							objRef.client.close();
+						}
+					});
+				}
+				xpTools.xpLog(false, "Listener sent to " + destinationList.length + " nodes of type " + deviceType + "!\n");
+			} else {
+				iterations++;
+				setTimeout(callback, 1000, deviceType, objRef, callback, iterations);
+			}
+		}
+	}
+	
+	setTimeout(nonBlockingSendingFunc, 1000, deviceType, objRef, nonBlockingSendingFunc, iterations);
+};
+
+/**
+ * Stop listening to a deviceName by removing itself from remote eventListenerList					
+ * @method stopListenDevice
+ * @param  {string}         deviceName
+ * @param  {xpMobileNode}         objRef
+ *  
+ */
+xpMobileNode.prototype.stopListenDevice = function(deviceName, objRef) {
+	var iterations = 0;
+	var nonBlockingSendingFunc = function(deviceName, objRef, callback, iterations) {
+		if(iterations &lt;= 10) {
+			var destination = objRef.lookupDevice(deviceName, objRef);
+			if(destination != null) {
+				var listener = new Object();
+				listener["message_type"] = XP_REMOVE_LISTENER;
+				listener["sender_ip_port"] = objRef.descriptor["sender_ip_port"];
+				listener["sender_session"] = objRef.descriptor["sender_session"];
+				listener["recipient_ip_port"] = destination["sender_ip_port"];
+				listener["recipient_session"] = destination["sender_session"];
+				listener["eventTypeMask"] = eventTypeMask;	
+				var recipientAddress = listener["recipient_ip_port"];
+				recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+				var recipientIP = recipientAddress.split(":")[0];
+				var recipientPort = recipientAddress.split(":")[1];
+				var datagram = xpTools.toByteArray(listener);
+				
+				objRef.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+					if(err){
+						xpTools.xpLog(false, "[xpMobileNode removing listener by name] Unable to send datagram\n");
+						objRef.client.close();
+					}
+					xpTools.xpLog(false, "Listener removed to " + deviceName + "!\n");
+				});
+			} else {
+				iterations++;
+				setTimeout(callback, 1000, deviceName, objRef, callback, iterations);
+			}
+		}
+	}
+	
+	setTimeout(nonBlockingSendingFunc, 1000, deviceName, objRef, nonBlockingSendingFunc, iterations);
+};
+/**
+ * Stop listening to a set of devices, referring to their type, by removing itself from remote eventListenerLists					
+ * @method stopListenDevice
+ * @param  {string}         deviceType
+ * @param {string} 			eventTypeMask	
+ * @param  {xpMobileNode}         objRef
+ *  
+ */
+xpMobileNode.prototype.stopListenDevices = function(deviceType, eventTypeMask, objRef) {
+	var iterations = 0;
+	var nonBlockingSendingFunc = function(deviceType, objRef, callback, iterations) {
+		if(iterations &lt;= 10) {
+			var destinationList = objRef.lookupDevices(deviceType, objRef);
+			
+			if(destinationList != null) {
+				//Adding specific properties of xpAction to passed key:value list
+				var listener = new Object();
+				listener["message_type"] = XP_REMOVE_LISTENER;
+				listener["sender_ip_port"] = objRef.descriptor["sender_ip_port"];
+				listener["sender_session"] = objRef.descriptor["sender_session"];
+				listener["eventTypeMask"] = eventTypeMask;
+				
+				for(var i = 0; i &lt; destinationList.length; i++) {
+					listener["recipient_ip_port"] = destinationList[i].sender_ip_port;
+					listener["recipient_session"] = destinationList[i].sender_session;
+						
+					var recipientAddress = listener["recipient_ip_port"];
+					// TODO xpTools.testAddress
+					recipientAddress = recipientAddress.substr(7,recipientAddress.length);
+					var recipientIP = recipientAddress.split(":")[0];
+					var recipientPort = recipientAddress.split(":")[1];
+					var datagram = xpTools.toByteArray(listener);
+					
+					objRef.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+						if(err){
+							xpTools.xpLog(false, "[xpMobileNode removing Listener by type] Unable to send datagram\n");
+							objRef.client.close();
+						}
+					});
+				}
+				xpTools.xpLog(false, "Listener removed to " + destinationList.length + " nodes of type " + deviceType + "!\n");
+			} else {
+				iterations++;
+				setTimeout(callback, 1000, deviceType, objRef, callback, iterations);
+			}
+		}
+	}
+	
+	setTimeout(nonBlockingSendingFunc, 1000, deviceType, objRef, nonBlockingSendingFunc, iterations);
+};
+
+/* **********************************************************************
+* 						ENDING Event Listener code-block
+********************************************************************** */
+
+/* **********************************************************************
+* 						STARTING Event code-block
+********************************************************************** */
+/**
+ * Creates a custom xpEvent obj and sends it to listeners
+ * @method sendCustomEvent
+ * @param  {xpMobileNode}        objRef
+ * 
+ */
+xpMobileNode.prototype.sendCustomEvent = function(objRef) {
+	var event = new Object();
+	event['__event_type'] = 0x1 &lt;&lt; 5;
+	event['payload'] = "";
+	
+	objRef.notifyListeners(event);
+}
+
+/**
+ * Notify all listeners that a new event is raised
+ * @method notifyListeners
+ * @param  {HashTable}        event
+ * 
+ */
+xpMobileNode.prototype.notifyListeners = function(event) {
+	event['sender_ip_port'] = this.descriptor['sender_ip_port'];
+	event['sender_session'] = this.descriptor['sender_session'];
+	event['sender_type'] = this.descriptor['sender_type'];
+	event['sender_name'] = this.descriptor['sender_name'];
+	event['message_type'] = XP_EVENT;
+	for (var i = 0; i &lt; this.eventListenerList.length; i++){
+		if(event.__event_type & this.eventListenerList[i].eventTypeMask){
+			event['recipient_session'] = this.eventListenerList[i].sender_session;
+			event['recipient_ip_port'] = this.eventListenerList[i].sender_ip_port;	
+			this.xpEvent(event);
+		}
+	}
+} 
+
+/**
+ * Forwards	an xpEvent to the recipient listener. Used internally 		 
+ * @method xpEvent
+ * @param  {Hashtable} xpEvent
+ * @return {boolean} true if success, false otherwise
+ */
+xpMobileNode.prototype.xpEvent = function(xpEvent) {
+	xpEvent["message_type"] = XP_EVENT;
+	var recipientAddress = xpEvent["recipient_ip_port"];
+	// TODO xpTools.testAddress
+	recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+	var recipientIP = recipientAddress.split(":")[0];
+	var recipientPort = recipientAddress.split(":")[1];
+	var datagram = xpTools.toByteArray(xpEvent);
+	
+	this.client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+		if(err){
+			xpTools.xpLog(false, "[xpMobileNode sending event] Unable to send datagram\n");
+			this.client.close();
+		}
+	});
+	
+	return true;
+};
+
+/**
+ * Dispatch received event. Used internally
+ * @method dispatchEvent
+ * @param  {HashTable}      xpEvent
+ * @param  {xpMobileNode}      objRef
+ * 
+ */
+xpMobileNode.prototype.dispatchEvent = function(xpEvent, objRef) {
+	if(xpEvent['recipient_session'] == objRef.descriptor['sender_session']) {
+		xpTools.xpLog(false, "Event Received\n");
+		xpTools.printHash(xpEvent);
+	}	
+}
+
+/* **********************************************************************
+* 						ENDING Event code-block
+********************************************************************** */
+
+/* **********************************************************************
+* 						STARTING Node lookup code-block
+********************************************************************** */
+/**
+ * Looks for a device type on the net 
+ * @method lookupDevices
+ * @param  {string}      type
+ * @param  {xpMobileNode}      objRef
+ * @return {Set} if found, returns a set of devices with the specified type, null otherwise 
+ */
+xpMobileNode.prototype.lookupDevices = function(type, objRef) {
+	var start = new Date().getTime();
+	var retVal = new Array();
+	for(var i = 0 ; i &lt; objRef.announcesList.length; i++) {
+		var iThElement = objRef.announcesList[i];	
+		if(iThElement['device_type'] == type) {
+			retVal.push(iThElement);
+		}
+	}
+	if(retVal.length > 0) {
+		xpTools.xpLog(false, "\tFound " + retVal.length + " nodes\n");
+		return retVal;
+	}
+	return null;
+}
+
+/**
+ * Looks for a specificed device on the net by its name 
+ * @method lookupDevices
+ * @param  {string}      name
+ * @param  {xpMobileNode}      objRef
+ * @return {Hashtable} if found, returns a device with the specified name, null otherwise 
+ */
+xpMobileNode.prototype.lookupDevice = function(name, objRef) {
+	var start = new Date().getTime();
+	
+	for(var i = 0 ; i &lt; objRef.announcesList.length; i++) {
+		var iThElement = objRef.announcesList[i];	
+		if(iThElement['device_name'] == name) {
+			xpTools.xpLog(false, "\tFound node " + iThElement['device_name'] + " on ip: " + iThElement['sender_ip_port'] + "\n");
+			return iThElement;
+		}
+	}
+	return null;
+}
+/**
+ * Lookup device implementation but blocking
+ * @method lookupDeviceWaiting
+ * @param  {string}            name
+ * @param  {xpMobileNode}            objRef
+ * @return {Hashtable} if found, returns a device with the specified name, null otherwise
+ */
+xpMobileNode.prototype.lookupDeviceWaiting = function(name, objRef) {
+	var iterations = 0;
+
+	var nonBlockingSendingFunc = function(name, objRef, callback, iterations) {
+		if(iterations &lt;= 20) {
+			var destination = objRef.lookupDevice(name, objRef);
+			if(destination != null) {
+				return destination;
+			} else {
+				iterations++;
+				setTimeout(callback, 1000, name, objRef, callback, iterations);
+			}
+		} else {
+			return null;
+		}
+	}
+	
+	setTimeout(nonBlockingSendingFunc, 1000, name, objRef, nonBlockingSendingFunc, iterations);
+}
+
+
+/* **********************************************************************
+* 						ENDING Node lookup code-block
+********************************************************************** */
+/**
+ * Prints a message received from WebSocket. Used internally for debuggin'
+ * @method printMessageFromWebSocket
+ * @param  {string}                  message
+ * 
+ */
+xpMobileNode.prototype.printMessageFromWebSocket = function(message) {
+	xpTools.xpTools.xpLog(false, message);
+}
+
+module.exports = xpMobileNode;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2><h3>Global</h3><ul><li><a href="global.html#addAnnounce">addAnnounce</a></li><li><a href="global.html#announce">announce</a></li><li><a href="global.html#announceService">announceService</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#dispatchAction">dispatchAction</a></li><li><a href="global.html#dispatcher">dispatcher</a></li><li><a href="global.html#dispatchEvent">dispatchEvent</a></li><li><a href="global.html#dispatchListener">dispatchListener</a></li><li><a href="global.html#dispatchRemoveListener">dispatchRemoveListener</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#listenDevice">listenDevice</a></li><li><a href="global.html#lookupDevices">lookupDevices</a></li><li><a href="global.html#lookupDeviceWaiting">lookupDeviceWaiting</a></li><li><a href="global.html#notifyListeners">notifyListeners</a></li><li><a href="global.html#printMessageFromWebSocket">printMessageFromWebSocket</a></li><li><a href="global.html#sendActionByName">sendActionByName</a></li><li><a href="global.html#sendActionByProxy">sendActionByProxy</a></li><li><a href="global.html#sendAnnounce">sendAnnounce</a></li><li><a href="global.html#sendCustomEvent">sendCustomEvent</a></li><li><a href="global.html#stopListenDevice">stopListenDevice</a></li><li><a href="global.html#XP_ACTION">XP_ACTION</a></li><li><a href="global.html#XP_ADD_LISTENER">XP_ADD_LISTENER</a></li><li><a href="global.html#XP_ANNOUNCE">XP_ANNOUNCE</a></li><li><a href="global.html#XP_EVENT">XP_EVENT</a></li><li><a href="global.html#XP_REMOVE_LISTENER">XP_REMOVE_LISTENER</a></li><li><a href="global.html#xpEvent">xpEvent</a></li><li><a href="global.html#xpMobileNode">xpMobileNode</a></li></ul>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.0-dev</a> on Mon Apr 22 2013 16:55:07 GMT+0200 (CEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

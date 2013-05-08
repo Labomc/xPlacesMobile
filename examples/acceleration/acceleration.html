@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        * {
+            margin: 0px 0px 0px 0px;
+        }
+    </style>
+ 	<script src="js/processing.js"></script>
+ 	<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
+    <script>
+        $('#gameTable').height($(window).height());
+        $('#gameTable').width($(window).width());
+    </script>
+<body>
+	<script type="application/processing">
+         /************ Start Pure JS *********/
+        var mapIPAcceleration = new Object();
+        var remoteAddress = 'ws://156.148.36.14:1337'
+        var connection = new WebSocket(remoteAddress, 'echo-protocol');
+        connection.onmessage = function (e) {
+            var acceleration = JSON.parse(e.data);
+            console.log(acceleration);
+            if(acceleration.IP in mapIPAcceleration) {
+                mapIPAcceleration[acceleration.IP].accelX = acceleration.x;
+                mapIPAcceleration[acceleration.IP].accelY = -acceleration.y;
+                mapIPAcceleration[acceleration.IP].accelZ = acceleration.z;
+                
+                if(mapIPAcceleration[acceleration.IP].draw == false) {
+                    var newAccel = new Object();
+                    
+                    color oldColor = mapIPAcceleration[acceleration.IP].color;
+                    
+                    newAccel.accelX = acceleration.x;
+                    newAccel.accelY = -acceleration.y;
+                    newAccel.accelZ = acceleration.z;
+                    newAccel.health = 100;
+                    newAccel.lastX = newAccel.startX = random(0, $(window).width()-128);
+                    newAccel.lastY = newAccel.startY = random(0, $(window).height()-128);
+                    newAccel.diffX = 0;
+                    newAccel.diffY = 0;
+                    newAccel.angle = 0;
+                    newAccel.dead = false;
+                    newAccel.draw = true;
+                    newAccel.color = oldColor;
+                    mapIPAcceleration[acceleration.IP] = newAccel;
+                }
+                
+                //console.log("OLD CAR X:" + mapIPAcceleration[acceleration.IP].startX + " Y:" + mapIPAcceleration[acceleration.IP].startY+ " on IP: " + acceleration.IP);
+                
+            } else {
+                var newAccel = new Object();
+                
+                newAccel.accelX = acceleration.x;
+                newAccel.accelY = -acceleration.y;
+                newAccel.accelZ = acceleration.z;
+                newAccel.health = 100;
+                newAccel.lastX = newAccel.startX = random(0, $(window).width()-128);
+                newAccel.lastY = newAccel.startY = random(0, $(window).height()-128);
+                newAccel.diffX = 0;
+                newAccel.diffY = 0;
+                newAccel.angle = 0;
+                newAccel.dead = false;
+                newAccel.draw = true;
+                newAccel.color = color(random(0,255), random(0,255), random(0,255), 50);
+                
+                mapIPAcceleration[acceleration.IP] = newAccel;
+                
+                console.log("NEW CAR aX:" +acceleration.x+ " aY:" +acceleration.y+" aZ:" +acceleration.z + " IP: " + acceleration.IP + " at x:" + newAccel.startX + " y:" + newAccel.startY);
+            }
+        };
+        /************ End Pure JS *********/
+		float scaleValue = 25.0;
+		PImage car;
+		PFont font;
+		
+		void setup() 
+		{
+		  size($(window).width(), $(window).height());
+		  smooth();	  
+		  car = loadImage("img/car.png");
+		  font = loadFont("Arial Black"); 
+		}
+		
+		void draw() {
+		    background(51);
+		    noStroke();
+		  
+		  	
+			for(var IP in mapIPAcceleration) {
+				var currentCar = mapIPAcceleration[IP];
+				//console.log(IP + ": at " + startX + "," + startY);
+				
+			    float startX = float(currentCar.startX);
+                float startY = float(currentCar.startY);
+                float lastX = float(currentCar.lastX);
+                float lastY = float(currentCar.lastY);
+                float accelX = float(currentCar.accelX);
+                float accelY = float(currentCar.accelY);
+                float diffX = float(currentCar.diffX);
+                float diffY = float(currentCar.diffY);
+                float health = float(currentCar.health);
+                float currentAngle = float(currentCar.angle);
+                color currentColor = currentCar.color;
+				
+				if(currentCar.dead == false) {
+    				if(health <= 0) { 
+                        currentCar.dead = true; 
+                        setTimeout(
+                            function(tempVar, mapToCheck){
+                                mapToCheck[IP].draw = false;
+                            }, 3000, IP, mapIPAcceleration
+                        );    
+                    } else {
+                        bool bump = false;
+                        float centerX = startX + car.width/2;
+                        float centerY = startY + car.height/2;
+                        for(var IP2 in mapIPAcceleration) {
+                            if(IP != IP2 && mapIPAcceleration[IP2].dead == false) {
+                                var otherCar = mapIPAcceleration[IP2];
+                                float otherPosX = otherCar.startX;
+                                float otherPosY = otherCar.startY;
+                                float otherCenterX = otherPosX + car.width/2;
+                                float otherCenterY = otherPosY + car.height/2;
+                                float otherHealth = otherCar.health;
+                                float dist = sqrt(pow(otherCenterX - centerX, 2) + pow(otherCenterY - centerY, 2));
+                                if(dist <= car.width) {
+                                    //health -= abs(accelX/scaleValue);
+                                    bump = true;
+                                    bool active = false;
+                                    
+                                    //if(abs(currentAngle - otherCar.angle) <= PI/2) { //right orientation to a valid collision
+                                    
+                                        int degrees = int((currentAngle) * 180/PI) % 360;
+                                    
+                                        //Check active/passive collision 
+                                        if((degrees >= 0 && degrees <= 90)) {
+                                            if(startX < otherCar.startX || startY < otherCar.startY)
+                                                active = true;
+                                        } else if( (degrees > 90 && degrees <= 180) ) {
+                                            if(startX > otherCar.startX || startY < otherCar.startY)
+                                                active = true;
+                                        } else if( (degrees > 180 && degrees <= 270) ) {
+                                            if(startX > otherCar.startX || startY > otherCar.startY)
+                                                active = true; 
+                                        } else if( (degrees > 270 && degrees <= 360) ) {
+                                            if(startX < otherCar.startX || startY > otherCar.startY)
+                                                active = true;
+                                        }
+                                    //}
+                                    
+                                    if(active == true) {
+                                        //otherHealth -= 2*abs(accelX/scaleValue);
+                                        //otherCar.health = otherHealth;
+                                        //health += + 2;
+                                        if(health > 100)
+                                            health = 100;
+                                        console.log("BUMP active");
+                                        console.log("Bump: CA:" + currentAngle + " OA: " + otherCar.angle + " DA: " + abs(currentAngle - otherCar.angle));
+                                        startX -= 32 * cos(currentAngle + PI/2);
+                                        startY -= 32 * sin(currentAngle + PI/2);
+                                        
+                                        
+                                    } else {
+                                        health -= 2;
+                                        startX += 64 * cos(otherCar.angle + PI/2);
+                                        startY += 64 * sin(otherCar.angle + PI/2);
+                                        
+                                        textFont(font, 32);
+                                    } 
+                                    
+                                    break;
+                                }
+                            }
+                        }
+                        if(bump == false) {
+                            if(startX + car.width + accelX/scaleValue >= $(window).width()) {
+                                startX = $(window).width() - car.width;
+                                //health -= abs(accelX/(scaleValue * 2));
+                            } else if(startX + accelX/scaleValue <= 0) {
+                                startX = 0;
+                                //health -= abs(accelX/(scaleValue * 2));
+                            } else {
+                                startX += accelX/(scaleValue);
+                            }
+                            
+                            if(startY + car.height + accelY/scaleValue >= $(window).height()) {
+                                startY = $(window).height() - car.height;
+                                //health -= abs(accelY/(scaleValue * 2));
+                            } else if(startY + accelY/scaleValue <= 0) {
+                                startY = 0;
+                                //health -= abs(accelY/(scaleValue * 2));
+                            } else {
+                                startY += accelY/(scaleValue);
+                            }
+                        }
+                        fill(currentCar.color);
+                        noStroke();
+                        pushMatrix();
+                        translate(startX + car.width/2, startY + car.height/2);
+                        diffX = startX - lastX;
+                        diffY = startY - lastY;
+                        float angle = atan2( -diffX, diffY );
+                        rotate(angle);
+                        ellipse(0, 0, 128, 128);
+                        image(car, -car.width/2, -car.height/2);
+      
+                        stroke(200);
+                        line(0, 0, 0, 100);
+                        line(0, 100, 20, 80);  
+                        line(0, 100, -20, 80); 
+                        fill(0, 0, 0);
+                        noStroke();
+                        /*textFont(font, 15);
+                        fill(255, 0, 10); 
+                        text(int(angle * 180/PI)%360, 0, -20);
+                        text(health, 0, -20);*/
+                        
+                        popMatrix();
+                        
+                        if(bump == true) {
+                             fill(255, 0, 0); 
+                             textFont(font, 32);
+                             text("BUMP", startX + 14, startY + 70, 100); 
+                        }
+                        
+                        if(health <= 33) {
+                            fill(255, 0, 0, 100);
+                        }
+                        if(health > 33 && health <= 50) {
+                            fill(255, 153, 0, 100);
+                        } 
+                        if(health > 50) {
+                            fill(0, 255, 0, 100);
+                        }
+                        rect(startX + 135, startY+ 14, 15, health);
+                        
+                        currentCar.angle = angle;
+                        currentCar.startX = startX;
+                        currentCar.startY = startY;
+                        currentCar.lastX = startX;
+                        currentCar.lastY = startY;
+                        currentCar.diffX = diffX;
+                        currentCar.diffY = diffY;
+                        currentCar.health = health;
+                        currentCar.accelX = accelX;
+                        currentCar.accelY = accelY;
+                    }
+				} else if(currentCar.draw == true){
+			        pushMatrix(); 
+                    translate(startX + car.width/2, startY + car.height/2);  
+                    rotate(currentAngle + PI/2);  
+                    image(car, -car.width/2, -car.height/2);      
+                    popMatrix();
+                    textFont(font, 32);
+                    fill(255, 0, 10); 
+                    text("LOSER", startX + 12, startY + 60, 100);  
+				}
+			}
+
+		}
+	</script>
+	<canvas id="gameTable"></canvas></p>
+	<div style="height:0px;width:0px;overflow:hidden;"></div>
+
+	</body>
+</html>

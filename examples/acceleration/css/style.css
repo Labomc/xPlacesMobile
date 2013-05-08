@@ -1,0 +1,44 @@
+body {
+    background-color: #ccc;
+    font-family: 'Helvetica Neue', HelveticaNeue, sans-serif;
+    text-shadow: white 0px 1px 1px;
+}
+
+h1 {
+    font-size: 1.2em;
+    text-align: center;
+}
+
+h2 {
+    font-size: 1em;
+    text-align: left;
+    margin: 0.7em 0 0.3em 0;
+}
+
+ul {
+    padding: 0;
+    margin: 0.3em 0 0.3em 0;
+}
+
+p, li {
+    font-size: 1em;
+    line-height: 1.4em;
+}
+
+.header {
+    text-align: center;
+    font-size: 0.8em;
+}
+
+.header span {
+    background-color: #dbdbdb;
+    border-radius: 0.6em;
+    padding: 0.4em;
+}
+
+.footer {
+    text-align: center;
+    font-size: 0.8em;
+    background-color: #dbdbdb;
+    border-radius: 0.6em;
+}

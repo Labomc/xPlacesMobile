@@ -1,0 +1,25 @@
+<html>
+	<head>
+		<title>Background Color Changer</title>
+		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+		<script src="http://code.jquery.com/jquery-migrate-1.1.0.min.js"></script>
+		<script>
+			window.addEventListener("load", function(event) {
+				var socket;  
+      			remote_IP_port = "ws://156.148.36.101:8080";
+		 		socket = new WebSocket(remote_IP_port, "echo-protocol");
+		 		
+		 		
+		 		socket.addEventListener("close", function(event) {
+		  			console.log("Socket Closed");
+				});
+			});
+		</script>
+		<style type='text/css'>
+			body { background-color: __SUBSTITUTE::ME__; }
+		</style>
+	</head>
+	<body>
+		
+	</body>
+</html>

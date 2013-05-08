@@ -1,0 +1,23 @@
+<html>
+	<head>
+		<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+		<script src="http://code.jquery.com/jquery-migrate-1.1.0.min.js"></script>	
+		<script>
+			$(document).ajaxSend(function() {
+  				$( ".log" ).text( "Triggered ajaxSend handler." );
+			});
+			$('.trigger').click(function() {
+				$('.trigger').
+  				$( ".result" ).load( "test.html" );
+			});
+		</script>
+		<title>
+			Sending
+		</title>
+	</head>
+	<body>
+		<div class="trigger">Trigger</div>
+		<div class="result"></div>
+		<div class="log"></div>
+	</body>
+</html>

@@ -1,0 +1,14 @@
+{
+	"netconf": {
+		"basePort": 5445,
+		"xPlacesServerIPPort" : "http://156.148.36.19:4444",
+		"localIP" : "156.148.36.14"
+	},
+	"args": {
+		"verbose" : false
+	},	
+	"device": {
+		"device_name" : "MOBILE_DEVICE_",
+		"device_type": "XP_MOBILE_DEVICE"	
+	}
+}

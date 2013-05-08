@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>A page that sends acceleration data through Websocket</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
+    <!--[if IE]>
+        <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <script>
+
+   
+    var jqxhr = $.getJSON("./roundcar.json", function(result) {
+        var socket = null;
+        var acceleration = new Object();
+        var remote_IP_port = "ws://156.148.36.101:1337";
+        socket = new WebSocket(remote_IP_port, "echo-protocol");
+        //$.each(result, function(result) {
+        acceleration['x'] = parseInt(result.x);
+        acceleration['y'] = parseInt(result.y);
+        acceleration['z'] = parseInt(result.z);
+        console.log(JSON.stringify(acceleration));
+        console.log(socket.readyState);
+        socket.onopen = function () {
+                socket.send(JSON.stringify(acceleration)); // Send the message 'Ping' to the server
+        };   
+        //socket.send(socket.readyState);
+        //});
+    });
+    
+    /*
+    var sendData = function(result) {
+        return function(data) {
+            processData(data, result);
+        }
+    }
+    var processData = function(socket, result){
+        if(!socket){
+            console.log("[DEBUG] Warning: Socket not defined or null\n");
+            var socket = null;
+            var remote_IP_port = "ws://156.148.36.101:1337";
+            socket = new WebSocket(remote_IP_port, "echo-protocol");
+        } else {
+            $("div").append("X: "+result.x+" Y: "+result.y+ " Z: "+result.z);
+            acceleration['x'] = parseInt(result.x);
+            acceleration['y'] = parseInt(result.y);
+            acceleration['z'] = parseInt(result.z);
+            console.log(JSON.stringify(acceleration));   
+            socket.send(JSON.stringify(acceleration));
+        }
+    }
+    */             
+    </script>
+</head>
+<body>
+    <div>
+    </div>   
+</body>
+</html>
+<!--
+        /*
+                $("div").append("X: "+result.x+" Y: "+result.y+ " Z: "+result.z);
+                acceleration['x'] = parseInt(result.x);
+                acceleration['y'] = parseInt(result.y);
+                acceleration['z'] = parseInt(result.z);
+                console.log(JSON.stringify(acceleration));
+                sendData(JSON.stringify(acceleration));
+        */
+-->

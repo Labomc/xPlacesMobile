@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: xpWebSocket.js</title>
+    
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+    
+    <h1 class="page-title">Source: xpWebSocket.js</h1>
+    
+    
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source"><code>/**
+ *	@overview JS Implementation of xPlaces protocol.
+ *	Based on xpUDPService C++ class
+ *
+ *	@copyright &lt;a href="http://www.crs4.it">CRS4 2013&lt;/a>
+ *	@author Simone Kalb &lt;kalb@crs4.it> 
+ *	@author Gian Maria Simbula &lt;simbula@crs4.it>
+ *	
+ *	@summary: Original work by Gian Maria Simbula
+ *	eMail: simbula@sardegnaricerche.it
+ *	eMail: simbula@crs4.it 
+ */
+
+/* Globals */
+var XP_ANNOUNCE = 1;
+var XP_EVENT = 2;
+var XP_ACTION = 3;
+var XP_ADD_LISTENER = 4;
+var XP_REMOVE_LISTENER = 5;
+
+var xpUDPServer = "156.148.36.99";
+var xPlacesServerIpPort = "http://156.148.36.101:4444";
+var dgram = require("dgram");
+var xpTools = require("./xpTools.js");
+/***********/
+
+function xpWebSocket() {
+	/* Private properties */
+	var client;
+	var address;
+	var descriptor; 
+	var counter;
+	var lastCheck;
+	var port;
+	xpWSRef = this;
+	announcesList = new Array();
+	deadList = new Array();
+	deviceList = new Array();
+	applicationList = new Array();
+	eventListenerList = new Array();
+};
+
+// Init
+xpWebSocket.prototype.init = function(port) {
+	var thisDate =  new Date();
+	this.port = port;
+	this.lastCheck = thisDate.valueOf();
+	
+	var randomString = xpTools.randomString(64, true, true, true); 
+ 
+  	descriptor = new Object();
+  	descriptor["device_name"] = "MOBILE_DEVICE";
+	descriptor["device_type"] = "XP_MOBILE_DEVICE";
+	descriptor["sender_session"] = randomString;
+	descriptor["sender_ip_port"] = "http://156.148.36.101:"
+	descriptor["sender_ip_port"] += this.port;
+	descriptor["recipient_session"] = "TODO";
+	descriptor["recipient_ip_port"] = xPlacesServerIpPort;
+	descriptor["message_type"] = "SETTATODAANNOUNCE";
+	descriptor["sender_type"] = "XP_MOBILE_DEVICE";
+	descriptor["sender_name"] = "MOBILE_DEVICE";
+	
+	client = dgram.createSocket("udp4");
+
+	client.on("message", function (msg, rinfo) {
+	/*
+		var appHash = xpTools.datagramToHash(msg);
+		console.log("Received: " + appHash.sender_ip_port + " type: " + appHash.message_type + "\n");
+		
+		xpTools.printByteArray(msg);
+	*/
+		//dispatcher here
+		xpWSRef.dispatcher(msg);
+		
+	});
+
+	client.on("listening", function () {
+	address = client.address();
+	  console.log("server listening " +
+	  address.address + ":" + address.port);
+	});
+
+	client.bind(port);
+	
+	
+	var interval = setInterval(this.announceService, 5000);
+	
+	var eventInterval = setInterval(this.sendCustomEvent, 1000);
+	//var interval = setInterval("announce(descriptor);", 5000);
+};
+
+xpWebSocket.prototype.sendCustomEvent = function() {
+	var event = new Object();
+	event['__event_type'] = 0x1 &lt;&lt; 5;
+	event['payload'] = "Cosa";
+	
+	xpWSRef.notifyListeners(event);
+}
+	
+xpWebSocket.prototype.announceService = function() {
+	//TODO Mutex
+	//lock();
+	
+	for (var i = announcesList.length - 1; i >= 0; i--) {
+		var announceItem = announcesList[i];
+		
+		var timeDiff = new Date().getTime() - announceItem.time_stamp;
+				
+		if (timeDiff > 10000) {
+			console.log("Dead Node at " + announceItem.sender_ip_port+"\n");
+			deadList.push(announceItem);
+			announcesList.remove(i, i);
+		}
+	}
+	
+	//We need to send the descriptor to the server at least the first time.
+	if(xPlacesServerIpPort != descriptor['sender_ip_port']) {
+		xpWSRef.sendAnnounce(descriptor, xPlacesServerIpPort);
+	}
+	
+	for(var i = 0 ; i &lt; announcesList.length; i++)	{	
+		if(announcesList[i].sender_ip_port != xPlacesServerIpPort)
+			xpWSRef.sendAnnounce(descriptor, announcesList[i]['sender_ip_port']);
+	}
+	
+	//NOTE: We have only one device in a xpWebSocket instance
+
+/*
+	//Send announce to device list
+	for(var i = 0; i &lt; deviceList.length; i++) {
+		if (xPlacesServerIpPort == descriptor['sender_ip_port']) {
+			sendAnnounce(deviceList[i], xPlacesServerIpPort);
+		}
+		for(var j = 0 ; j &lt; announcesList.length; j++)	{
+			sendAnnounce(devicesList[i], announcesList[j]['sender_ip_port']);
+		}
+	}
+
+	//Send announce to application list
+	for(var i = 0; i &lt; applicationList.length; i++) {
+		if (xPlacesServerIpPort == descriptor['sender_ip_port']) {
+			sendAnnounce(applicationList[i], xPlacesServerIpPort);
+		}
+		for(var j = 0 ; j &lt; announcesList.length; j++)	{
+			sendAnnounce(applicationList[i], announcesList[j]['sender_ip_port']);
+		}
+	}
+*/
+	//unlock();
+};
+
+xpWebSocket.prototype.announce = function(device) {
+		device["message_type"] = XP_ANNOUNCE;
+		var recipientAddress = device["recipient_ip_port"];
+		// TODO xpTools.testAddress
+		recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+		var recipientIP = recipientAddress.split(":")[0];
+		var recipientPort = recipientAddress.split(":")[1];
+		var datagram = xpTools.toByteArray(device);
+		
+		client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+			if(err){
+				console.log("[xpWebSocket] Unable to send datagram\n");
+				client.close();
+			}
+		  	
+		});
+		
+		return true;
+		
+}; 
+	
+xpWebSocket.prototype.action = function(action) {
+		action["message_type"] = XP_ACTION;
+		var recipientAddress = action["recipient_ip_port"];
+		// TODO xpTools.testAddress
+		recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+		var recipientIP = recipientAddress.split(":")[0];
+		var recipientPort = recipientAddress.split(":")[1];
+		var datagram = xpTools.toByteArray(action);
+		
+		client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+			if(err){
+				console.log("[xpWebSocket] Unable to send datagram\n");
+				client.close();
+			}
+		});
+		
+		return true;
+};
+	
+xpWebSocket.prototype.xpEvent = function(xpEvent) {
+		xpEvent["message_type"] = XP_EVENT;
+		var recipientAddress = xpEvent["recipient_ip_port"];
+		// TODO xpTools.testAddress
+		recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+		var recipientIP = recipientAddress.split(":")[0];
+		var recipientPort = recipientAddress.split(":")[1];
+		var datagram = xpTools.toByteArray(xpEvent);
+		
+		client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+			if(err){
+				console.log("[xpWebSocket] Unable to send datagram\n");
+				client.close();
+			}
+		});
+		
+		return true;
+};
+	
+xpWebSocket.prototype.addEventListener = function(device, type) {
+		device["message_type"] = XP_ADD_LISTENER;
+		var recipientAddress = device["recipient_ip_port"];
+		// TODO xpTools.testAddress
+		recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+		var recipientIP = recipientAddress.split(":")[0];
+		var recipientPort = recipientAddress.split(":")[1];
+		var datagram = xpTools.toByteArray(device);
+		
+		client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+			if(err){
+				console.log("[xpWebSocket] Unable to send datagram\n");
+			}
+		  	client.close();
+		});
+		
+		return true;
+};	
+	
+xpWebSocket.prototype.removeEventListener = function(device) {
+		device["message_type"] = XP_REMOVE_LISTENER;
+		var recipientAddress = device["recipient_ip_port"];
+		// TODO xpTools.testAddress
+		recipientAddress = recipientAddress.substr(7,recipientAddress.lenght);
+		var recipientIP = recipientAddress.split(":")[0];
+		var recipientPort = recipientAddress.split(":")[1];
+		var datagram = xpTools.toByteArray(device);
+		
+		client.send(datagram, 0, datagram.length, recipientPort, recipientIP, function(err, bytes) {
+			if(err){
+				console.log("[xpWebSocket] Unable to send datagram\n");
+			}
+		  	client.close();
+		});
+		
+		return true;
+};
+
+xpWebSocket.prototype.dispatcher = function(properties) {
+	    var message = xpTools.datagramToHash(properties);
+	    //console.log('MESSAGE TYPE: '+parseInt(message['message_type']));
+		switch(parseInt(message['message_type']))
+		{
+			case (XP_EVENT):
+				//dispatchEvent(message);
+			break;
+			case (XP_ACTION):
+				this.dispatchAction(message);
+			break;
+			case(XP_ADD_LISTENER):
+				this.dispatchListener(message);
+			break;
+			case(XP_REMOVE_LISTENER):
+				//dispatchRemove(new xpEventListenerProxy(properties));
+			break;
+			case(XP_ANNOUNCE):
+				this.addAnnounce(message);
+			break;
+			default:
+				console.log("Not a known type...\n");
+			break;
+		}
+};
+
+xpWebSocket.prototype.dispatchAction = function(action) {
+	if(action['recipient_session'] == descriptor['sender_session']) {
+		console.log("Action Received");
+		//console.log("Property: " +action.numero1+ "\nValue: " +action.stringa1);
+	}
+	
+}
+
+xpWebSocket.prototype.addAnnounce = function(announce) {
+		if (descriptor["sender_ip_port"] == announce['sender_ip_port']) {
+			console.log("[DEBUG] Ghost received - discarded: " + announce['sender_session']);
+			return;
+		}
+		
+		for(var i = 0; i &lt; deadList.length; i++) {
+			//Return if announce is related to an item in deadList.
+			if(announce['sender_ip_port'] == deadList[i]['sender_ip_port'] && announce['sender_session'] == deadList[i]['sender_session'])
+				return;
+		}
+		
+		for(var i = 0 ; i &lt; announcesList.length; i++) {
+			var iThElement = announcesList[i];	
+			if(iThElement['sender_session'] == announce['sender_session']) {
+				iThElement['time_stamp'] = new Date().getTime();
+				//console.log("Updating announce item " + iThElement['sender_session'] + "\n");
+				return;
+			}
+		}
+
+		if (xPlacesServerIpPort == descriptor['sender_ip_port']) {
+			//console.log("I'm the server\n");
+			for(var i = 0 ; i &lt; announcesList.length; i++) {
+				sendAnnounce(announce, announcesList[i]['sender_ip_port']);
+			}
+		}
+
+		console.log("New node detected on ip: " + announce['device_name'] + " " + announce['sender_session'] + ": new item\n");
+		announce['time_stamp'] = new Date().getTime();
+		announcesList.push(announce);
+};
+
+xpWebSocket.prototype.notifyListeners = function(event) {
+	event['sender_ip_port'] = descriptor['sender_ip_port'];
+	event['sender_session'] = descriptor['sender_session'];
+	event['sender_type'] = descriptor['sender_type'];
+	event['sender_name'] = descriptor['sender_name'];
+	event['message_type'] = XP_EVENT;
+	for (var i = 0; i &lt; eventListenerList.length; i++){
+		if(event.__event_type & eventListenerList[i].eventTypeMask){
+			event['recipient_session'] = eventListenerList[i].sender_session;
+			event['recipient_ip_port'] = eventListenerList[i].sender_ip_port;	
+			this.xpEvent(event);
+		}
+	}
+} 
+
+xpWebSocket.prototype.dispatchListener = function(eventListener) {
+	eventListener['timeStamp'] = new Date().getTime();
+	if(eventListener['recipient_session'] == descriptor['sender_session']) {
+		console.log("New eventListener on ip " + eventListener['sender_ip_port'] + " and session " + eventListener['sender_session'] + "\n");
+		eventListenerList.push(eventListener);
+	} else {
+		console.log("Someone asked for a different session: " + eventListener['recipient_ip_port'] + "\n");
+	}
+};
+
+xpWebSocket.prototype.sendAnnounce = function(descriptor, destination) {
+	// Send my descriptor to network
+	descriptor['recipient_ip_port'] = destination;
+	xpWSRef.announce(descriptor);
+};
+
+xpWebSocket.prototype.lookupDevices = function(type) {
+	var start = new Date().getTime();	
+	
+	while((new Date().getTime() - start) &lt;= 1000 * 60 * 60) {
+		var retVal = new Array();
+		for(var i = 0 ; i &lt; announcesList.length; i++) {
+			var iThElement = announcesList[i];	
+			if(iThElement['sender_type'] == type) {
+				retVal.push(iThElement);
+			}
+		}
+		if(retVal.length > 0)
+			return retVal;
+	}
+}
+
+xpWebSocket.prototype.lookupDevice = function(name) {
+	var start = new Date().getTime();
+	
+	while((new Date().getTime() - start) &lt;= 1000 * 60 * 60) {
+		for(var i = 0 ; i &lt; announcesList.length; i++) {
+			var iThElement = announcesList[i];	
+			if(iThElement['sender_name'] == name) {
+				return iThElement;
+			}
+		}
+	}
+}
+
+// Class Constructor - Exports
+module.exports = xpWebSocket;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.0-dev</a> on Mon Apr 22 2013 16:28:56 GMT+0200 (CEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
