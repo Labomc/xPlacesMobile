@@ -9,6 +9,8 @@ lib-cov
 *.svn
 *.DS_Store
 
+jsdoc
+
 pids
 logs
 results
