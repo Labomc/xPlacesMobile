@@ -6,9 +6,9 @@ xPlaces 2.0 is the evolution of xPlaces and it is focused on mobile devices and 
 # Files and folders structure:
 
   * node_modules
-	* examples
-	* misc
-	* JSON
+  * examples
+  * misc
+  * JSON
 
 ***
 ## __node_modules__ 
