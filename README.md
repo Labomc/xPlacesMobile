@@ -6,6 +6,7 @@ It is based on a much more modern software architecture, than the previous versi
 
 But the major enhancement of the new version is that is backward compatible with an existing xPlaces network. 
 Your can run a new mobile service that speaks flawlessly with an existing C++ based network.   
+
 The developer is now able to test and deploy an application that runs directly on mobile devices with or without the need to install any app on it, just pointing the mobile browser to a web page. 
 
 # Files and folders structure:
