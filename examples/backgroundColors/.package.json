@@ -1,0 +1,15 @@
+{
+  "name": "xpMobileNode",
+  "description": "A mobile node in a xPlaces network",
+  "version": "0.0.1",
+  "author" : "Simone Kalb <kalb@crs4.it>, Gian Maria Simbula <simbula@crs4.it>"
+  "private": true,
+  "dependencies": {
+	"websocket": "1.0.8",
+	"xpTools": "0.0.1"
+  }, 
+  "licence": "GPL v2.0"
+  "engines":{
+	  "node": ">=0.6"
+  }
+}

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Daft Punk Drum Pad</title>
+
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+    <script src="http://cdn.socket.io/stable/socket.io.js"></script>
+
+    <style type="text/css">
+      body {
+        margin: 0px 0px 0px 0px;
+        background-color:#2d2e29;
+        text-align: center;
+      }
+      
+      span {
+        padding-bottom: 60px;
+      }
+
+      .pad {
+        padding: 20px;
+        padding-top: 6em;
+      }
+
+      .sound {
+        -moz-box-shadow: 0px 1px 0px 0px #1c1b18;
+        -webkit-box-shadow: 0px 1px 0px 0px #1c1b18;
+        box-shadow: 0px 1px 0px 0px #1c1b18;
+        background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #eae0c2), color-stop(1, #ccc2a6));
+        background:-moz-linear-gradient(top, #eae0c2 5%, #ccc2a6 100%);
+        background:-webkit-linear-gradient(top, #eae0c2 5%, #ccc2a6 100%);
+        background:-o-linear-gradient(top, #eae0c2 5%, #ccc2a6 100%);
+        background:-ms-linear-gradient(top, #eae0c2 5%, #ccc2a6 100%);
+        background:linear-gradient(to bottom, #eae0c2 5%, #ccc2a6 100%);
+        filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#eae0c2', endColorstr='#ccc2a6',GradientType=0);
+        
+        background-color:#eae0c2;
+        
+        -moz-border-radius:15px;
+        -webkit-border-radius:15px;
+        border-radius:15px;
+        
+        border:2px solid #333029;
+        
+        display:inline-block;
+        color:#505739;
+        font-family:arial;
+        font-size:80px;
+        font-weight:bold;
+        padding:16px 20px;
+        text-decoration:none;
+        
+        text-shadow:0px 1px 0px #ffffff;
+        margin-bottom: 40px;
+        margin-right: 40px;
+      }
+
+      .sound:hover {
+          background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #ccc2a6), color-stop(1, #eae0c2));
+          background:-moz-linear-gradient(top, #ccc2a6 5%, #eae0c2 100%);
+          background:-webkit-linear-gradient(top, #ccc2a6 5%, #eae0c2 100%);
+          background:-o-linear-gradient(top, #ccc2a6 5%, #eae0c2 100%);
+          background:-ms-linear-gradient(top, #ccc2a6 5%, #eae0c2 100%);
+          background:linear-gradient(to bottom, #ccc2a6 5%, #eae0c2 100%);
+          filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ccc2a6', endColorstr='#eae0c2',GradientType=0);
+          background-color:#ccc2a6;
+      }
+
+      .sound:active {
+          position:relative;
+          top:1px;
+      }
+
+    </style>
+    
+    <script>
+    /*
+    window.onload = function() { 
+      document.getElementById('workit').onlick = function (event) {
+        event = event || window.event;
+        var target = event.target || event.srcElement;
+        document.getElementById('workit').innerHTML = "Pushed";
+        setTimeout(function(){ $("#workit").html = "Work it"},3000);
+        document.println("Event:"+ event +"\n");
+        console.log(target.id);
+        };
+      };
+      */
+      window.addEventListener("load", function() {
+        var socket;  
+        remote_IP_port = "ws://156.148.36.102:3000";
+        socket = new WebSocket(remote_IP_port, "echo-protocol");
+        console.log("Socket Opened");
+        
+
+        function buttonPressed(e) {
+          // As in http://bit.ly/1hchv8I
+          var sender = (e && e.target) || (window.event && window.event.srcElement);
+          var node = mapIPMobileNode[request.socket._peername.address];
+          connection = socket;
+          var xpAction = new Object();
+          action['action_type'] = 0x11;
+          action['action_name'] = sender.id;
+          connection.send(xpAction);
+          console.log("Button Pressed & Connection Message Sent");
+
+          var workit = document.getElementById('workit');
+          workit.addEventListener('click', this.buttonPressed.bind(this), false);
+        }
+
+        
+      });
+    </script>    
+  </head>
+  <body>
+    <div class="messages">
+      <p id='connectionMessage'></p>
+    </div>
+    <div class="pad">
+        <a href="#" class="sound" id="workit">Work it</a>
+        <a href="#" class="sound" onclick="alert('Make it')">Make it</a>
+        <a href="#" class="sound" onclick="alert('Do It')">Do it</a>
+        <a href="#" class="sound" onclick="alert('Makes Us')">Makes Us</a><br/>
+        <a href="#" class="sound" onclick="alert('Hour')">Hour</a>
+        <a href="#" class="sound" onclick="alert('Ever')">Ever</a>
+        <a href="#" class="sound" onclick="alert('After')">After</a>
+        <a href="#" class="sound" onclick="alert('Work Is')">Work is</a>
+        <a href="#" class="sound" onclick="alert('Over')">Over</a><br/>  
+        <a href="#" class="sound" onclick="alert('Harder')">Harder</a>
+        <a href="#" class="sound" onclick="alert('Better')">Better</a>
+        <a href="#" class="sound" onclick="alert('Faster')">Faster</a>
+        <a href="#" class="sound" onclick="alert('Stronger')">Stronger</a>
+    </div>
+  </body>
+  <script>
+      
+  </script>
+</html>
+
