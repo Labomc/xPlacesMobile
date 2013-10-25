@@ -34,11 +34,10 @@ var server = http.createServer(function (request, response) {
 	  		console.log("Sending "+request.url);
 	  		//IP + node
 	  		mapIPMobileNode[request.connection.remoteAddress] = node;
-	  		
-	  		/*if(x10DeviceNode == null) {
+	  		if(x10DeviceNode == null) {
 	  			x10DeviceNode = node.lookupDeviceWaiting('x10Device', node);
 	  		}
-	  		if(x10DeviceNode != null) {*/
+	  		if(x10DeviceNode != null) {
 		  		var lampOnAction = new Object();
 		  		lampOnAction['action_type'] = 0x01;
 			    lampOnAction['HOUSE_CODE'] = 'D';
@@ -56,7 +55,8 @@ var server = http.createServer(function (request, response) {
 		  			//nodeApp.sendActionByProxy(x10DeviceNode, lampOffAction, nodeApp);
 		  		};
 	  		    setTimeout(funcLampOff, 10000, node);
-  		   // }
+  		   	}
+  		   
 
 	 }
 	 response.writeHead(200);
@@ -104,8 +104,6 @@ wsServer.on('request', function(request) {
 	        	currentNode.notifyListeners(eventToSend);
         	}
 
-			
-			
 			var toResend = new Object();
 			toResend['x'] = objReceived.x;
 			toResend['y'] = objReceived.y;

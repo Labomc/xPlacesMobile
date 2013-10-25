@@ -12,7 +12,7 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var fs = require('fs');
-var xpMobileNode = require('xpMobileNode');
+//var xpMobileNode = require('xpMobileNode');
 
 var id = 0;
 var mapIPMobileNode = new Object();

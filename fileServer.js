@@ -50,6 +50,7 @@ http.createServer(function (req, res) {
 	});
 	id++;
 }).listen(port);
+console.log("Listening on port "+port);
 /**
  * Listen to specified port
  */
