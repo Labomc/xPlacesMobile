@@ -99,7 +99,7 @@ wsServer.on('request', function(request) {
 				eventToSend['x'] = objReceived.x;
 				eventToSend['y'] = objReceived.y;
 	        	       	
-	            //console.log("X:" +objReceived.x+ " Y:" +objReceived.y+" from: " +request.socket.remoteAddress);
+	            console.log("X:" +objReceived.x+ " Y:" +objReceived.y+" from: " +request.socket.remoteAddress);
 				
 	        	currentNode.notifyListeners(eventToSend);
         	}
