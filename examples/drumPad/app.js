@@ -90,12 +90,6 @@ wsServer.on('request', function(request) {
     var connection = request.accept(request.origin);
     console.log((new Date()) + ' Connection accepted.');
     connection.send("Server Says: Connected.");
-    if (!originIsAllowed(request.origin)) {
-        // Make sure we only accept requests from an allowed origin
-        request.reject();
-        console.log((new Date()) + ' Connection from origin ' + request.origin + ' rejected.');
-        return;
-    }
     
     connection.on('message', function(message) {
         if (message.type === 'utf8') {

@@ -4,7 +4,7 @@ class CircleButton {
   String label;
   int radius = 9;
   int diameter;
-  color col = #0000FF;
+  color col = #f3f2e2;
   CircleButton(int centerXX, int centerYY, String labelL) {
     // Constructor (centerXX, centerYY) is the center of the circle.
     // labelL is the button's label shown on its right.
@@ -37,8 +37,8 @@ class CircleButton {
 
 class ToggleButton extends CircleButton{
   boolean state;
-  color trueCol = #CC0000;
-  color falseCol = #CCCCCC;
+  color trueCol = #f3f2e2;
+  color falseCol = #f3f2e2;
 
   ToggleButton(int centerXX, int centerYY, String labelL,
               boolean isTrue)

@@ -86,7 +86,8 @@
         <a href="#" class="sound" id="ever">Ever</a>
         <a href="#" class="sound" id="after">After</a>
         <a href="#" class="sound" id="workis">Work is</a>
-        <a href="#" class="sound" id="over">Over</a><br/>  
+        <a href="#" class="sound" id="over">Over</a><br/> 
+        <a href="#" class="sound" id="ohno">Oh no<a> 
         <a href="#" class="sound" id="harder">Harder</a>
         <a href="#" class="sound" id="better">Better</a>
         <a href="#" class="sound" id="faster">Faster</a>
@@ -223,6 +224,13 @@
                 ws.sendMessage(message);
                 ev.preventDefault();
           });
+            
+      var ohno = document.getElementById('ohno');
+            ohno.addEventListener('click', function(ev) {
+                message = this.textContent;
+                ws.sendMessage(message);
+                ev.preventDefault();
+          });            
       })(); 
     </script>
 </html>

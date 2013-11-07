@@ -4,21 +4,34 @@
 // 3/28/12  4/12/12   6/18/12
 
 // The constants can be modified.
-int width = 500;  // Width of canvas
-int height = 325; // Height of canvas
+// Change it with $(window).height(); and $(window).width();
+int width = 1200;  // Width of canvas
+int height = 525; // Height of canvas
 
 // It is assumed that both .ogg and .mp3 versions of the files are available
 // in the same folder.  The file names must be complete URLs except for the
 // ending .ogg or .mp3 which must be omitted. It will be added as needed for
 // the browser.  Use the prefix "file:///" or "http:// as appropriate.
-String[] files = {"http://personalpages.tds.net/~jimdani74/groove",
-                  "http://personalpages.tds.net/~jimdani74/jingle",
-                  "http://personalpages.tds.net/~jimdani74/marcus_kellis_theme"};
+String[] files = {"http://kalb.it/drumpad/base"};
 int numFiles = files.length;
 int currentFile = 0;   // current file for audio = audioArray[0]
-String[] soundFiles = {"http://personalpages.tds.net/~jimdani74/ding",
-                  "http://personalpages.tds.net/~jimdani74/FavSound",
-                  "http://personalpages.tds.net/~jimdani74/truck_horn"};
+String[] soundFiles = {"http://kalb.it/drumpad/workit",
+                  "http://kalb.it/drumpad/makeit",
+                  "http://kalb.it/drumpad/doit",
+                  "http://kalb.it/drumpad/makesus",
+                  "http://kalb.it/drumpad/hour",
+                  "http://kalb.it/drumpad/ever",
+                  "http://kalb.it/drumpad/after",
+                  "http://kalb.it/drumpad/workis",
+                  "http://kalb.it/drumpad/over",
+                  "http://kalb.it/drumpad/harder",
+                  "http://kalb.it/drumpad/better",
+                  "http://kalb.it/drumpad/faster",
+                  "http://kalb.it/drumpad/stronger"};
+String baseURL ="http://kalb.it/drumpad/";
+String[] fileNames = {"workit", "makeit", "doit", "makesus", 
+                      "hour", "ever", "after", "workis", "over", "harder", 
+                      "better", "faster", "stronger"};                
 int numSoundFiles = soundFiles.length;
 String[] chordFiles = {"http://personalpages.tds.net/~jimdani74/jenHum01",
                   "http://personalpages.tds.net/~jimdani74/jenHum02",
@@ -29,7 +42,7 @@ String fileExt;  // extension being used by the browser: .ogg or .mp3
 
 // Global variables
 Audio audio = new Audio();
-int numAudio = 10;
+int numAudio = 10; //The real samples number is 40 16HIGH1 16HIGH2 8LOW 
 Audio[] audioArray = new Audio[numAudio];
 
 int time;
@@ -48,8 +61,15 @@ int ySoundFiles = 195;
 lastAudio = -1;   // subscript of last audio element used     // optional
 
 // display items
-Display dis = new Display(audioArray, width, height, false);
-ToggleButton displayOnBtn;
+//Display dis = new Display(audioArray, width, height, false);
+//ToggleButton displayOnBtn;
+
+// Variables accessing getter/setter  from the JS environment
+int getNumFiles () {return numFiles;}
+String getSoundFiles () {return soundFiles;}
+String getFileNames () {return fileNames;}
+Audio[] getAudioArray () {return audioArray;}
+int getNumSoundFiles () {return numSoundFiles;}
 
 void setup() {
   int i, y;
@@ -78,8 +98,8 @@ void setup() {
   volumeUpBtn = new CircleButton(270, 170, "Volume up");
   timeDownBtn = new CircleButton(165, 195, "Time down");
   timeUpBtn = new CircleButton(270, 195, "Time up");
-  loopBtn = new ToggleButton(165, 220, "Loop", false);
-  autoplayBtn= new ToggleButton(270, 220, "Autoplay", false);
+  loopBtn = new ToggleButton(165, 220, "Loop", true);
+  autoplayBtn= new ToggleButton(270, 220, "Autoplay", true);
   y = 245;
   for (i = 0; i < numFiles; i++) {
     fileBtn[i] = new ToggleButton(20, y, files[i], false);
@@ -90,7 +110,7 @@ void setup() {
   audioArray[0] = audio;
   for (i = 0; i < numSoundFiles; i++) {
     soundFilesBtn[i] = new CircleButton(xSoundFiles, ySoundFiles,
-         "Sound " + i);
+         fileNames[i]);
     ySoundFiles += 25;
   }
   ySoundFiles += 25;  // leave a blank line
@@ -105,7 +125,7 @@ void setup() {
 
 void draw() {
   // Draws the sketch on the canvas
-  background(#FFFFAA);
+  background(#FFFFFF);
   fill(#000000);
   if (audio == null) {
     text("Your browser does not handle the HTML 5 audio tag.  You ", 20, 30);
@@ -114,7 +134,7 @@ void draw() {
   }
 
   textAlign(CENTER);
-  text("KISA 6 with Display", width/2, 30);
+  text("iDaft Tribute", width/2, 30);
   text("Source file: " + audio.src, width/2, 60);
   text("Status: " + audioStatus, width/2, 80);
   text("Current time: " + round(audio.currentTime)
@@ -123,28 +143,29 @@ void draw() {
 
   playBtn.draw();
   pauseBtn.draw();
-  stopBtn.draw();
-  volumeDownBtn.draw();
-  volumeUpBtn.draw();
-  timeDownBtn.draw();
-  timeUpBtn.draw();
-  loopBtn.draw();
-  autoplayBtn.draw();
+  //stopBtn.draw();
+  //volumeDownBtn.draw();
+  //volumeUpBtn.draw();
+  //timeDownBtn.draw();
+  //timeUpBtn.draw();
+  //loopBtn.draw();
+  //autoplayBtn.draw();
   for (i = 0; i < numFiles; i++) {
     fileBtn[i].draw();
   }
 
   // draw sound and chord buttons
-  fill(#DDDD99);
-  rect(xSoundFiles - 18, ySoundFiles - 143, 119, 133);
+  //fill(#DDDD99);
+  //rect(xSoundFiles - 18, ySoundFiles - 143, 119, 133);
   for (i = 0; i < numSoundFiles; i++) {
     soundFilesBtn[i].draw();
   }
   chordBtn.draw();
+  /*
   if (lastAudio > 0)                         // optional
     text("Last audio player: " + lastAudio,  // optional
         xSoundFiles - 10, ySoundFiles - 47); // optional
-
+  */
   // draw the display items
   dis.draw();
   displayOnBtn.draw();
@@ -257,7 +278,7 @@ void error() {
   audioStatus = "Error";
 }  // error
 
-void mouseClicked() {
+void mouseClicked(){ 
   // Mouse clicked event processing
   double v, t;
   int i;
