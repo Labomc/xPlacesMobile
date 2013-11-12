@@ -1,4 +1,8 @@
-#!/usr/bin/env node
+/*
+ *	Server Music Player DrumPad example xPlacesMobile
+ *	This node receives actions and plays samples on remote client page.
+ * 	Author: Simone Kalb <kalb@crs4.it> &copy; 2013
+*/
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var fs = require('fs');
@@ -8,6 +12,8 @@ var xpTools = require('xpTools');
 var mapIPMobileNode = new Object();
 var id = 0;
 
+var node;
+
 var server = http.createServer(function(request, response) {
   console.log('Received request from ' + request.url);
   fs.readFile(__dirname + request.url, function (err,data) {
@@ -15,13 +21,16 @@ var server = http.createServer(function(request, response) {
       response.writeHead(404);
       response.end(JSON.stringify(err));
       return;
-    }
-    if(request.url.substring(request.url.length-5, request.url.length) == '.html'){
-        var node = new xpMobileNode(id, response, "../../JSON/configuration.json");
+    } else {
+        node = new xpMobileNode(id, response, "../../../JSON/configuration.json");
         node.init();    
         console.log("Sending "+request.url);
         //IP + node
         mapIPMobileNode[request.connection.remoteAddress] = node;
+				node.descriptor.sender_name = "MOBILE_LISTENER_0";
+				node.descriptor.device_name = "MOBILE_LISTENER_0";
+				var eventType = 0x99; 
+				node.listenDevices("XP_MOBILE_DEVICE", eventType, node);
         response.writeHead(200);
         response.end(data);  
     }
@@ -29,8 +38,8 @@ var server = http.createServer(function(request, response) {
   id++;
 });
 
-server.listen(3000, function() {
-    console.log('Server is listening on port 3000.');
+server.listen(1337, function() {
+    console.log('Server is listening on port 1337.');
 });
 
 wsServer = new WebSocketServer({
@@ -52,35 +61,47 @@ wsServer.on('connection', function(webSocketConnection) {
 });
 
 wsServer.on('request', function(request) {
-
+  
   var connection = isAllowedOrigin(request.origin) ?
-    request.accept()
-    : request.reject();
+    request.accept() : request.reject(); 
 
   connection.on('message', function(message) {
-
-    var response = '';
+    
     console.log('Received Message: ' + message.utf8Data);
-    var eventToSend = new Object();
-
-
     if (message.type === 'utf8') {
         if(request.socket.remoteAddress in mapIPMobileNode) { 
-        var currentNode = mapIPMobileNode[request.socket.remoteAddress];
-        response = message.utf8Data.deleteWhiteSpaces().toLowerCase();
-        eventToSend['__event_type'] = 0x10 << 5;
-        eventToSend['sample'] = response;
-      
-        console.log("Sample:" +eventToSend['sample']+ " from: " +request.socket.remoteAddress);      
-        
-         
-        currentNode.notifyListeners(eventToSend);
-      
-        connection.sendUTF(response);
+
+          switch(message.utf8Data) {
+            case 'ack':
+              response = 'play';
+              connection.sendUTF(response);
+              break;
+            case 'play':
+              response = 'play';
+              connection.sendUTF(response);
+              break;
+            case 'stop':
+              response = 'stop';
+              connection.sendUTF(response);
+              break;
+            case 'harder':
+              response = 'harder';
+              connection.sendUTF(response);  
+            default:
+              break;
+          }
     }
   }
+  xpMobileNode.prototype.dispatchAction = function(action, objRef) {
+    // Forwarding the received message to peers
+    connection.sendUTF(action['sample']);      
+  };
 });
   connection.on('close', function(reasonCode, description) {
+      // The remote peer closed the connection
       console.log(connection.remoteAddress + ' has been disconnected.');
   });
 });
+
+
+

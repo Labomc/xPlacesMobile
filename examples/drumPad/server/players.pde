@@ -28,11 +28,15 @@ String[] soundFiles = {"http://kalb.it/drumpad/workit",
                   "http://kalb.it/drumpad/better",
                   "http://kalb.it/drumpad/faster",
                   "http://kalb.it/drumpad/stronger"};
+
 String baseURL ="http://kalb.it/drumpad/";
+
 String[] fileNames = {"workit", "makeit", "doit", "makesus", 
                       "hour", "ever", "after", "workis", "over", "harder", 
                       "better", "faster", "stronger"};                
+
 int numSoundFiles = soundFiles.length;
+
 String[] chordFiles = {"http://personalpages.tds.net/~jimdani74/jenHum01",
                   "http://personalpages.tds.net/~jimdani74/jenHum02",
                   "http://personalpages.tds.net/~jimdani74/jenHum03"};

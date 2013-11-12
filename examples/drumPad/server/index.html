@@ -7,89 +7,86 @@
     <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
     <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
     <script>
-        var processingInstance;
-        var selectOption;
-        var remote_IP_port = "ws://156.148.36.102:1337";
-        ws = new WebSocket(remote_IP_port);
-        processingInstance = Processing.getInstanceById('daft');
-        console.log('Item to play:'+ processingInstance.soundFiles[0]);
-        
-        ws.onopen = function(ev) {
-          console.log('Connection opened.');
-          console.log('Item to play:'+ processingInstance.soundFiles[0]);
-          //processingInstance.load()
-        }
-        
-        ws.onmessage = function(ev) {
-          switch(ev.data) {
-            case 'play':
-              JSPlay();
-              console.log('Play from server: ' + ev.data);
-              break;
-            case 'stop':
-              JSStop();
-              console.log('Stop from server: ' + ev.data);
-              break;
-            case 'harder':
-              JSHarder(); 
-              console.log('Harder');
-              break;
-            default:
-              break;
+    window.addEventListener('load', function () {
+          var p;
+          var selectOption;
+          var remote_IP_port = "ws://192.168.1.202:1337";
+          ws = new WebSocket(remote_IP_port);
+          p = Processing.getInstanceById('daft');
+
+          
+          ws.onopen = function(ev) {
+            console.log('Connection opened with '+ remote_IP_port);
           }
-        }
-
-        ws.onclose = function(ev) {
-          console.log('Connection closed.');
-        }
-        ws.onerror = function(ev) {
-          console.log('An error occurred. Sorry for that.');
-        }
-
-        WebSocket.prototype.sendMessage = function(msg) {
-           this.send(msg);
-           console.log('Message sent: ' + msg);
-        }
-        
-        function JSHarder() {
-          switchSketchState('harder');
-        }
-
-        function JSPlay(){
-          switchSketchState(3);
-        }
-
-        function JSStop(){
-          switchSketchState(0);
-        }
-
-        function JSLoad(){
-          switchSketchState(0);
-        }
-
-        /*
-        function populateSelect{
-          var player = $('player');
-          var select = document.createElement('select');
-          for (var i = 0; i < soundFiles. )
-
-        } 
-        */
-
-        function switchSketchState(num) {
-          if (!processingInstance) {
-                processingInstance = Processing.getInstanceById('daft');
+          
+          ws.onmessage = function(ev) {
+            console.log(ev.data);
+            switch(ev.data) {
+              case 'play':
+                JSPlay();
+                console.log('Play from server: ' + ev.data);
+                break;
+              case 'stop':
+                JSStop();
+                console.log('Stop from server: ' + ev.data);
+                break;
+              case 'harder':
+                JSHarder(); 
+                console.log('Harder');
+                break;
+              default:
+                break;
             }
-            if (num > 0) {
-                processingInstance.play(0);  
-            } else if(num < 0) {
-                processingInstance.pause(); 
-            } else if(num == 0) {
-                processingInstance.stop()
-            } else {
-                processingInstance.play(load(soundFiles[9]));
+          }
+
+          ws.onclose = function(ev) {
+            console.log('Connection closed.');
+          }
+          ws.onerror = function(ev) {
+            console.log('An error occurred. Sorry for that.');
+          }
+
+          WebSocket.prototype.sendMessage = function(msg) {
+             this.send(msg);
+             console.log('Message sent: ' + msg);
+          }
+          
+          function JSHarder() {
+            switchSketchState('harder');
+          }
+
+          function JSPlay(){
+            switchSketchState(3);
+          }
+
+          function JSStop(){
+            switchSketchState(-1);
+          }
+
+          function JSLoad(){
+            switchSketchState(0);
+          }
+
+          function switchSketchState(num) {
+            if (!p) {
+                  p = Processing.getInstanceById('daft');
             }
-        }
+
+            switch(num) {
+              case (num > 0) :
+                p.play(0);
+                break;
+              case (num < 0) :
+                p.stop();
+                break;
+              case (num == 0):
+                p.play(p.load(p.getSoundFiles()[9]));  
+                break;
+              default:
+                break;
+            }
+          } 
+    });
     </script>
 </head>
 <body>
