@@ -8,40 +8,40 @@
     <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
     <script>
     window.addEventListener('load', function () {
+          var MAX_SAMPLE_NUMBER = 12;
           var p;
           var selectOption;
           var remote_IP_port = "ws://192.168.1.202:1337";
           ws = new WebSocket(remote_IP_port);
           p = Processing.getInstanceById('daft');
 
-          
           ws.onopen = function(ev) {
             console.log('Connection opened with '+ remote_IP_port);
+            ws.sendMessage('ack');
           }
           
           ws.onmessage = function(ev) {
+            // Handles playing of various samples based on received messages from the node
+            // -1 is the base, MAX_SAMPLE_NUMBER does nothing because is of of the sample array
             console.log(ev.data);
-            switch(ev.data) {
-              case 'play':
-                JSPlay();
-                console.log('Play from server: ' + ev.data);
-                break;
-              case 'stop':
-                JSStop();
-                console.log('Stop from server: ' + ev.data);
-                break;
-              case 'harder':
-                JSHarder(); 
-                console.log('Harder');
-                break;
-              default:
-                break;
+            if (!p) {
+                  p = Processing.getInstanceById('daft');
+            }
+            if(ev.data == -1 || ev.data > MAX_SAMPLE_NUMBER) {
+              if(ev.data) {
+                p.play(0);
+              } else {
+                return;
+              }
+            } else {
+                p.play(p.load(p.getSoundFiles()[ev.data]));
             }
           }
 
           ws.onclose = function(ev) {
             console.log('Connection closed.');
           }
+
           ws.onerror = function(ev) {
             console.log('An error occurred. Sorry for that.');
           }
@@ -50,42 +50,17 @@
              this.send(msg);
              console.log('Message sent: ' + msg);
           }
-          
-          function JSHarder() {
-            switchSketchState('harder');
-          }
 
           function JSPlay(){
-            switchSketchState(3);
+            // Play the base
+            p.play(0);
           }
 
           function JSStop(){
-            switchSketchState(-1);
+            // Stop it
+            p.stop();
           }
-
-          function JSLoad(){
-            switchSketchState(0);
-          }
-
-          function switchSketchState(num) {
-            if (!p) {
-                  p = Processing.getInstanceById('daft');
-            }
-
-            switch(num) {
-              case (num > 0) :
-                p.play(0);
-                break;
-              case (num < 0) :
-                p.stop();
-                break;
-              case (num == 0):
-                p.play(p.load(p.getSoundFiles()[9]));  
-                break;
-              default:
-                break;
-            }
-          } 
+          
     });
     </script>
 </head>
@@ -97,11 +72,7 @@
   </canvas> 
   <div id="player">  
       <button onclick="JSPlay()">Play</button>
-      
       <button onclick="JSStop()">Stop</button>
-      
-      <button onclick="JSLoad()">Load</button>
-
   </div>
 </body>
 </html>
