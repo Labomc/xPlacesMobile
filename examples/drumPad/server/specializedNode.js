@@ -19,5 +19,5 @@ specializedNode.prototype.dispatchAction = function(xpAction, objRef) {
 };
 
 var myNode = new specializedNode(id, client, '../../../JSON/configuration.json');
-myNode.init();
+myNode.initialize();
 myNode.listenDevices('XP_MOBILE_DEVICE', eventType, myNode);

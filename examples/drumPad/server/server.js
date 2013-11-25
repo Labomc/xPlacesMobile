@@ -6,29 +6,29 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var fs = require('fs');
-var xpMobileNode = require('xpMobileNode')
-var sNode = require('./specializedNode');
+var xpMobileNode = require('xpMobileNode');
+//var sNode = require('./specializedNode');
 var xpTools = require('xpTools');
 
 var mapIPMobileNode = new Object();
 var id = 0;
 var eventType = 0x99; 
-
+var wsConnections = new Array();
 var node;
 var connection;
 var fileNames = ["workit", "makeit", "doit", "makesus",
                  "hour", "ever", "after", "workis",
                  "over", "harder",
                  "better", "faster", "stronger"];
-/*
+
 xpMobileNode.prototype.dispatchAction = function(action, objRef) {
-    console.log('Forwarding action'+ action['sample']+'At index'+ fileNames.indexOf(action['sample']));
+    //console.log('Forwarding action'+ action['sample']+'At index'+ fileNames.indexOf(action['sample']));
     // Forwarding the received message to peers
     connection.sendUTF(fileNames.indexOf(action['sample']));        
   };
-*/
+
 var server = http.createServer(function(request, response) {
-  console.log('Received request from ' + request.url);
+  //console.log('Received request from ' + request.url);
   fs.readFile(__dirname + request.url, function (err,data) {
     if (err) {
       response.writeHead(404);
@@ -37,7 +37,7 @@ var server = http.createServer(function(request, response) {
     } else {
         node = new xpMobileNode(id, response, "../../../JSON/configuration.json");
         node.init();    
-        console.log("Sending "+request.url);
+        //console.log("Sending "+request.url);
         //IP + node
         mapIPMobileNode[request.connection.remoteAddress] = node;
 				node.descriptor.sender_name = "MOBILE_LISTENER_0";
@@ -93,7 +93,8 @@ wsServer = new WebSocketServer({
 });
 
 wsServer.on('connection', function(webSocketConnection) {
-  console.log('Connection started.');
+  //console.log('Connection started.');
+  wsConnections.push(webSocketConnection);
 });
 
 wsServer.on('request', function(request) {
@@ -103,7 +104,7 @@ wsServer.on('request', function(request) {
 
   connection.on('message', function(message) {
     
-    console.log('Received Message: ' + message.utf8Data);
+    //console.log('Received Message: ' + message.utf8Data);
     if (message.type === 'utf8') {
         if(request.socket.remoteAddress in mapIPMobileNode) { 
 
@@ -113,6 +114,7 @@ wsServer.on('request', function(request) {
               connection.sendUTF(response);
               break;
             default:
+              //response = 
               break;
           }
         }

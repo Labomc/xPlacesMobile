@@ -129,8 +129,8 @@ void setup() {
 
 void draw() {
   // Draws the sketch on the canvas
-  background(#FFFFFF);
-  fill(#000000);
+  background(#000000);
+  fill(#FFFFFF);
   if (audio == null) {
     text("Your browser does not handle the HTML 5 audio tag.  You ", 20, 30);
     text("may want to upgrade your browser to the current version.", 20, 60);
