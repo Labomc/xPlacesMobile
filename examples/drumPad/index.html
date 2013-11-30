@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Daft Punk Drum Pad</title>
-
+    <meta name="viewport" content="user-scalable=no">
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
     <script src="http://cdn.socket.io/stable/socket.io.js"></script>
@@ -19,7 +19,7 @@
 
       .pad {
         padding: 20px;
-        padding-top: 6em;
+        paddin-top: 10px;
       }
 
       .sound {
@@ -45,9 +45,9 @@
         display:inline-block;
         color:#505739;
         font-family:arial;
-        font-size:80px;
+        font-size:40px;
         font-weight:bold;
-        padding:16px 20px;
+        padding:13px 16px;
         text-decoration:none;
         
         text-shadow:0px 1px 0px #ffffff;
@@ -87,7 +87,6 @@
         <a href="#" class="sound" id="after">After</a>
         <a href="#" class="sound" id="workis">Work is</a>
         <a href="#" class="sound" id="over">Over</a><br/> 
-        <a href="#" class="sound" id="ohno">Oh no<a> 
         <a href="#" class="sound" id="harder">Harder</a>
         <a href="#" class="sound" id="better">Better</a>
         <a href="#" class="sound" id="faster">Faster</a>
@@ -98,7 +97,7 @@
       (function() {
         var ws; 
         var message = ''; 
-        remote_IP_port = "ws://156.148.36.102:3000";
+        remote_IP_port = "ws://192.168.1.202:3000";
         ws = new WebSocket(remote_IP_port);
         console.log("Socket opened.");
         

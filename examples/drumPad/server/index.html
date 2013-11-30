@@ -17,7 +17,7 @@
           var MAX_SAMPLE_NUMBER = 12;
           var p;
           var selectOption;
-          var remote_IP_port = "ws://156.148.36.102:1337";
+          var remote_IP_port = "ws://192.168.1.202:1337";
           ws = new WebSocket(remote_IP_port);
           p = Processing.getInstanceById('daft');
 
@@ -45,11 +45,11 @@
           }
 
           ws.onclose = function(ev) {
-            console.log('Connection closed.');
+            //console.log('Connection closed.');
           }
 
           ws.onerror = function(ev) {
-            console.log('An error occurred. Sorry for that.');
+            //console.log('An error occurred. Sorry for that.');
           }
 
           WebSocket.prototype.sendMessage = function(msg) {

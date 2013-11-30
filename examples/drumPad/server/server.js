@@ -3,29 +3,33 @@
  *	This node receives actions and plays samples on remote client page.
  * 	Author: Simone Kalb <kalb@crs4.it> &copy; 2013
 */
-var WebSocketServer = require('websocket').server;
 var http = require('http');
 var fs = require('fs');
-var xpMobileNode = require('xpMobileNode');
-//var sNode = require('./specializedNode');
 var xpTools = require('xpTools');
+var WebSocketServer = require('websocket').server;
+
+var xpMobileNode = require('xpMobileNode');
+
+
+
 
 var mapIPMobileNode = new Object();
 var id = 0;
 var eventType = 0x99; 
-var wsConnections = new Array();
+
 var node;
-var connection;
 var fileNames = ["workit", "makeit", "doit", "makesus",
                  "hour", "ever", "after", "workis",
                  "over", "harder",
                  "better", "faster", "stronger"];
 
 xpMobileNode.prototype.dispatchAction = function(action, objRef) {
-    //console.log('Forwarding action'+ action['sample']+'At index'+ fileNames.indexOf(action['sample']));
+    //console.log('Forwarding action '+ action['sample']+'At index'+ fileNames.indexOf(action['sample']));
     // Forwarding the received message to peers
     connection.sendUTF(fileNames.indexOf(action['sample']));        
-  };
+};
+  
+
 
 var server = http.createServer(function(request, response) {
   //console.log('Received request from ' + request.url);
@@ -74,7 +78,7 @@ var indexOf = function (needle) {
 
 
 server.listen(1337, function() {
-    console.log('Server is listening on port 1337.');
+    //console.log('Server is listening on port 1337.');
 });
 
 function isAllowedOrigin(origin) {
@@ -94,7 +98,6 @@ wsServer = new WebSocketServer({
 
 wsServer.on('connection', function(webSocketConnection) {
   //console.log('Connection started.');
-  wsConnections.push(webSocketConnection);
 });
 
 wsServer.on('request', function(request) {
@@ -123,7 +126,7 @@ wsServer.on('request', function(request) {
  
   connection.on('close', function(reasonCode, description) {
       // The remote peer closed the connection
-      console.log(connection.remoteAddress + ' has been disconnected.');
+      //console.log(connection.remoteAddress + ' has been disconnected.');
   });
 });
 

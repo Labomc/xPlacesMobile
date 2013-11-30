@@ -7,14 +7,15 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var fs = require('fs');
-var xpMobileNode = require('xpMobileNode');
 var xpTools = require('xpTools');
+var xpMobileNode = require('xpMobileNode');
+
 
 var mapIPMobileNode = new Object();
 var id = 0;
 
 var server = http.createServer(function(request, response) {
-  console.log('Received request from ' + request.url);
+  //console.log('Received request from ' + request.url);
   fs.readFile(__dirname + request.url, function (err,data) {
     if (err) {
       response.writeHead(404);
@@ -24,7 +25,7 @@ var server = http.createServer(function(request, response) {
     if(request.url.substring(request.url.length-5, request.url.length) == '.html'){
         var node = new xpMobileNode(id, response, "../../JSON/configuration.json");
         node.init();    
-        console.log("Sending "+request.url);
+        //console.log("Sending "+request.url);
         //IP + node
         mapIPMobileNode[request.connection.remoteAddress] = node;
         response.writeHead(200);
@@ -35,7 +36,7 @@ var server = http.createServer(function(request, response) {
 });
 
 server.listen(3000, function() {
-    console.log('Server is listening on port 3000.');
+    //console.log('Server is listening on port 3000.');
 });
 
 wsServer = new WebSocketServer({
@@ -55,7 +56,7 @@ String.prototype.deleteWhiteSpaces = function() {
 
 wsServer.on('connection', function(webSocketConnection) {
   // Just to make sure that websocket is working properly
-  console.log('Connection started.');
+  //console.log('Connection started.');
 });
 
 wsServer.on('request', function(request) {
@@ -67,7 +68,7 @@ wsServer.on('request', function(request) {
   connection.on('message', function(message) {
 
     var sample = '';
-    console.log('Received Message: ' + message.utf8Data);
+    //console.log('Received Message: ' + message.utf8Data);
     var  xpAction =new Object();
 
     if (message.type === 'utf8') {
@@ -79,7 +80,7 @@ wsServer.on('request', function(request) {
        	xpAction['action_type'] = 0x99;
       	xpAction['sample'] = sample;
       
-        console.log("Sample:" +xpAction['sample']+ " from: " +request.socket.remoteAddress);      
+        //console.log("Sample:" +xpAction['sample']+ " from: " +request.socket.remoteAddress);      
         currentNode.sendActionByType('XP_MOBILE_DEVICE', xpAction, currentNode);
     }
   }

@@ -1,8 +1,8 @@
 {
 	"netconf": {
 		"basePort": 5445,
-		"xPlacesServerIPPort" : "http://156.148.36.101:4444",
-		"localIP" : "156.148.36.102"
+		"xPlacesServerIPPort" : "http://192.168.1.202:4444",
+		"localIP" : "192.168.1.202"
 	},
 	"args": {
 		"verbose" : true
