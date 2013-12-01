@@ -14,7 +14,22 @@
     <script>
       $('#iDaft').height = $(window).height();
       $('#iDaft').width = $(window).width();
-      
+      var names = [
+          "Work it", 
+          "Make It",   
+          "Do It", 
+          "Make us",
+          "Hour",
+          "Ever",
+          "After",
+          "Work is",
+          "Over",
+          "Harder",
+          "Better",
+          "Faster",
+          "Stronger"   
+        ];
+
       window.addEventListener('load', function () {
           var MAX_SAMPLE_NUMBER = 12;
           var p;
@@ -42,6 +57,7 @@
                 return;
               }
             } else {
+                p.setFadingText(names[ev.data]);
                 p.play(p.load(p.getSoundFiles()[ev.data]));
             }
           }

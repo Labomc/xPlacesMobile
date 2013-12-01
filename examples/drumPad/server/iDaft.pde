@@ -14,6 +14,8 @@ int lastTime;
 float alphaVal = 255; 
 float a = 5; 
 
+String fadingText;
+
 // Font properties
 PFont font;
 int textFontSize = 200;
@@ -80,6 +82,10 @@ String getFileNames () {return fileNames;}
 Audio[] getAudioArray () {return audioArray;}
 int getNumSoundFiles () {return numSoundFiles;}
 
+void setFadingText(text) {
+  fadingText = text;
+}
+
 // In setup()
 void setup() {
   int i, y;
@@ -125,23 +131,7 @@ void draw() {
     text("may want to upgrade your browser to the current version.", 20, 60);
   return;
   }
-  /*
-  //Show fading text
-  if (millis() - lastTime >= DISPLAY_TIME) {  // Time to display next image 
-
-  	counter = int(random(samples.length)); 
-		alphaVal = 255; 
-		lastTime = millis();
-		zAxis = -100.0;
-
-	} 
-	  fill(redColor, greenColor, blueColor, alphaVal); 
-	  textSize(textFontSize); 
-	  text(samples[counter], (pageWidth/4), 200); 
-	  alphaVal -= a; 
-	  //zAxis += 25;
-	 */
-	 showFadingText();
+	 showFadingText(fadingText);
 }
 
 void play(int num) {
@@ -252,19 +242,19 @@ void setSource(int num, String url) {
 } // setSource
 
 
-void showFadingText() {
+void showFadingText(fadingText) {
 	//Show fading text
   if (millis() - lastTime >= DISPLAY_TIME) {  // Time to display next image 
 
   	counter = int(random(samples.length)); 
 		alphaVal = 255; 
 		lastTime = millis();
-		zAxis = -100.0;
 
 	} 
-	  fill(redColor, greenColor, blueColor, alphaVal); 
+	  fill(redColor, greenColor, blueColor, alphaVal);
+    stroke(0);
 	  textSize(textFontSize); 
-	  text(samples[counter], (pageWidth/4), 200); 
+	  text(fadingText, (pageWidth/4), 200); 
 	  alphaVal -= a; 
 }
 	
