@@ -1,0 +1,98 @@
+<!DOCTYPE html>  
+<html>
+<head>
+  <title>iDaft</title>
+    <style>
+      body {
+        margin-left: 0px;
+        margin-top: 0px;
+      }
+    </style>
+    <script type="text/javascript" src="http://processingjs.org/js/processing.min.js"></script>
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
+    <script>
+      //$('#iDaft').height = $(window).height();
+      //$('#iDaft').width = $(window).width();
+      var names = [
+          "Work it", 
+          "Make It",   
+          "Do It", 
+          "Make us",
+          "Hour",
+          "Ever",
+          "After",
+          "Work is",
+          "Over",
+          "Harder",
+          "Better",
+          "Faster",
+          "Stronger"   
+        ];
+
+      window.addEventListener('load', function () {
+          var MAX_SAMPLE_NUMBER = 12;
+          var p;
+          var selectOption;
+          var remote_IP_port = "ws://156.148.36.102:1337";
+          ws = new WebSocket(remote_IP_port);
+          p = Processing.getInstanceById('iDaft');
+
+          ws.onopen = function(ev) {
+            //console.log('Connection opened with '+ remote_IP_port);
+            ws.sendMessage('ack');
+          }
+          
+          ws.onmessage = function(ev) {
+            // Handles playing of various samples based on received messages from the node
+            // -1 is the base, MAX_SAMPLE_NUMBER does nothing because is of of the sample array
+            //console.log(ev.data);
+            if (!p) {
+                  p = Processing.getInstanceById('iDaft');
+            }
+            if(ev.data == -1 || ev.data > MAX_SAMPLE_NUMBER) {
+              if(ev.data) {
+                //p.play(0);
+              } else {
+                return;
+              }
+            } else {
+                p.setFadingText(names[ev.data]);
+                p.play(p.load(p.getSoundFiles()[ev.data]));
+            }
+          }
+
+          ws.onclose = function(ev) {
+            //console.log('Connection closed.');
+          }
+
+          ws.onerror = function(ev) {
+            //console.log('An error occurred. Sorry for that.');
+          }
+
+          WebSocket.prototype.sendMessage = function(msg) {
+             this.send(msg);
+             //console.log('Message sent: ' + msg);
+          }
+
+          function JSPlay(){
+            // Play the base
+            p.play(0);
+          }
+
+          function JSStop(){
+            // Stop it
+            p.stop();
+          }
+          
+    });
+    </script>
+</head>
+<body>
+  <canvas id="iDaft" data-processing-sources="iDaft.pde">
+      Your browser does not support HTML 5.  You may want to update your
+      browser.
+  </canvas>
+  
+</body>
+</html>

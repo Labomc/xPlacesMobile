@@ -5,8 +5,8 @@
 
 // The constants can be modified.
 // Change it with $(window).height(); and $(window).width();
-int width = 1200;  // Width of canvas
-int height = 525; // Height of canvas
+int width = $(window).width();  // Width of canvas
+int height = $(window).height(); // Height of canvas
 
 // It is assumed that both .ogg and .mp3 versions of the files are available
 // in the same folder.  The file names must be complete URLs except for the
@@ -129,8 +129,8 @@ void setup() {
 
 void draw() {
   // Draws the sketch on the canvas
-  background(#000000);
-  fill(#FFFFFF);
+  background(#FFFFFF);
+  fill(#FF0000);
   if (audio == null) {
     text("Your browser does not handle the HTML 5 audio tag.  You ", 20, 30);
     text("may want to upgrade your browser to the current version.", 20, 60);
