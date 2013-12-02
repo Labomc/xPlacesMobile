@@ -4,8 +4,8 @@
  * and text effect remote event receiver through xPlacesMobile
 */
 // Page size according to browser view
-int pageWidth = $(window).width();  // Width of canvas
-int pageHeight = $(window).height();
+int pageWidth = $(window).innerWidth();  // Width of canvas
+int pageHeight = $(window).innerHeight();
 float yoff = 0.0;        // 2nd dimension of perlin noise
 
 int counter; 
@@ -80,6 +80,7 @@ int getNumFiles () {return numFiles;}
 String getSoundFiles () {return soundFiles;}
 String getFileNames () {return fileNames;}
 Audio[] getAudioArray () {return audioArray;}
+Audio getAudio () {return audio;}
 int getNumSoundFiles () {return numSoundFiles;}
 
 void setFadingText(text) {
@@ -254,7 +255,7 @@ void showFadingText(fadingText) {
 	  fill(redColor, greenColor, blueColor, alphaVal);
     stroke(0);
 	  textSize(textFontSize); 
-	  text(fadingText, (pageWidth/4), 200); 
+	  text(fadingText, (pageWidth/2)-300, 200); 
 	  alphaVal -= a; 
 }
 	

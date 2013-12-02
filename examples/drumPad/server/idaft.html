@@ -12,8 +12,8 @@
     <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
     <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
     <script>
-      $('#iDaft').height = $(window).height();
-      $('#iDaft').width = $(window).width();
+      //$('#iDaft').height = $(window).height();
+      //$('#iDaft').width = $(window).width();
       var names = [
           "Work it", 
           "Make It",   
@@ -34,7 +34,7 @@
           var MAX_SAMPLE_NUMBER = 12;
           var p;
           var selectOption;
-          var remote_IP_port = "ws://192.168.1.202:1337";
+          var remote_IP_port = "ws://156.148.36.102:1337";
           ws = new WebSocket(remote_IP_port);
           p = Processing.getInstanceById('iDaft');
 
@@ -92,6 +92,7 @@
   <canvas id="iDaft" data-processing-sources="iDaft.pde">
       Your browser does not support HTML 5.  You may want to update your
       browser.
-  </canvas> 
+  </canvas>
+  
 </body>
 </html>

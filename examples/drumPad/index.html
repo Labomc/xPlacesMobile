@@ -97,7 +97,7 @@
       (function() {
         var ws; 
         var message = ''; 
-        remote_IP_port = "ws://192.168.1.202:3000";
+        remote_IP_port = "ws://156.148.36.102:3000";
         ws = new WebSocket(remote_IP_port);
         console.log("Socket opened.");
         
@@ -121,111 +121,111 @@
 
         // Don't blame me is just for testing
         var workit = document.getElementById('workit');
-        workit.addEventListener('click', function(ev) {
+        workit.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         });
 
         var makeit = document.getElementById('makeit');
-        makeit.addEventListener('click', function(ev) {
+        makeit.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         });
 
         var doit = document.getElementById('doit');
-        doit.addEventListener('click', function(ev) {
+        doit.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         });
 
         var makesus = document.getElementById('makesus');
-        makesus.addEventListener('click', function(ev) {
+        makesus.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         });
 
         var hour = document.getElementById('hour');
-        hour.addEventListener('click', function(ev) {
+        hour.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         }); 
 
        var ever = document.getElementById('ever');
-        ever.addEventListener('click', function(ev) {
+        ever.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         });
         
         var after = document.getElementById('after');
-        after.addEventListener('click', function(ev) {
+        after.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         }); 
 
         var hour = document.getElementById('hour');
-        hour.addEventListener('click', function(ev) {
+        hour.addEventListener('mousedown', function(ev) {
             message = this.textContent;
             ws.sendMessage(message);
             ev.preventDefault();
         });
 
         var workis = document.getElementById('workis');
-          workis.addEventListener('click', function(ev) {
+          workis.addEventListener('mousedown', function(ev) {
               message = this.textContent;
               ws.sendMessage(message);
               ev.preventDefault();
           });
         var over = document.getElementById('over');
-          over.addEventListener('click', function(ev) {
+          over.addEventListener('mousedown', function(ev) {
               message = this.textContent;
               ws.sendMessage(message);
               ev.preventDefault();
           });
         
         var harder = document.getElementById('harder');
-          harder.addEventListener('click', function(ev) {
+          harder.addEventListener('mousedown', function(ev) {
               message = this.textContent;
               ws.sendMessage(message);
               ev.preventDefault();
           });  
 
         var workis = document.getElementById('workis');
-          workis.addEventListener('click', function(ev) {
+          workis.addEventListener('mousedown', function(ev) {
               message = this.textContent;
               ws.sendMessage(message);
               ev.preventDefault();
           });
        
         var better = document.getElementById('better');
-            better.addEventListener('click', function(ev) {
+            better.addEventListener('mousedown', function(ev) {
                 message = this.textContent;
                 ws.sendMessage(message);
                 ev.preventDefault();
           });
 
       var faster = document.getElementById('faster');
-            faster.addEventListener('click', function(ev) {
+            faster.addEventListener('mousedown', function(ev) {
                 message = this.textContent;
                 ws.sendMessage(message);
                 ev.preventDefault();
           });
       
       var stronger = document.getElementById('stronger');
-            stronger.addEventListener('click', function(ev) {
+            stronger.addEventListener('mousedown', function(ev) {
                 message = this.textContent;
                 ws.sendMessage(message);
                 ev.preventDefault();
           });
             
       var ohno = document.getElementById('ohno');
-            ohno.addEventListener('click', function(ev) {
+            ohno.addEventListener('mousedown', function(ev) {
                 message = this.textContent;
                 ws.sendMessage(message);
                 ev.preventDefault();
